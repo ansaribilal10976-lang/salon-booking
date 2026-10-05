@@ -232,7 +232,7 @@ begin
   perform pg_temp.admin_expect_error('insert into public.services (name,duration,price) values (''NaN price'',30,''NaN'')', '23514');
   perform pg_temp.admin_expect_error(format('update public.services set price = -1 where id = %L', v_new_service), '23514');
   perform pg_temp.admin_expect_error(format('update public.services set price = ''NaN'' where id = %L', v_new_service), '23514');
-  perform pg_temp.admin_expect_error('insert into public.services (name,duration,price) values (''Overflow price'',30,100000000)', '22003');
+  perform pg_temp.admin_expect_error('insert into public.services (name,duration,price) values (''Overflow price'',30,100000000)', '23514');
   perform pg_temp.admin_expect_error(format('insert into public.services (id,name,duration,price) values (%L,''Chosen id'',30,1)', gen_random_uuid()), '42501');
   perform pg_temp.admin_expect_error(format('update public.services set id = %L where id = %L', gen_random_uuid(), v_new_service), '42501');
   perform pg_temp.admin_expect_error(format('delete from public.services where id = %L', v_service), '23503');

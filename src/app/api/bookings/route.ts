@@ -19,14 +19,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Booking details are too long." }, { status: 413, headers });
   }
   let input: unknown;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
-    const text = await request.text();
-    if (new TextEncoder().encode(text).length > 4096) {
-      return NextResponse.json({ error: "Booking details are too long." }, { status: 413, headers });
+    reader = request.body?.getReader();
+    if (!reader) throw new Error("Missing request body");
+    const bytes = new Uint8Array(4096);
+    let size = 0;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      if (size + chunk.value.byteLength > bytes.byteLength) {
+        // Do not retain the oversized chunk or wait for cancellation to finish.
+        // A stalled/failed cancellation must not delay or replace the 413.
+        void reader.cancel().catch(() => {});
+        return NextResponse.json({ error: "Booking details are too long." }, { status: 413, headers });
+      }
+      bytes.set(chunk.value, size);
+      size += chunk.value.byteLength;
     }
-    input = JSON.parse(text);
+    input = JSON.parse(new TextDecoder().decode(bytes.subarray(0, size)));
   } catch {
     return NextResponse.json({ error: "The booking details could not be read. Please try again." }, { status: 400, headers });
+  } finally {
+    reader?.releaseLock();
   }
 
   const result = await submitBooking(input, async (values) => {

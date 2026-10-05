@@ -6,6 +6,7 @@ const sources = [
   "20261005010000_add_guest_booking_rpcs.sql",
   "20261005020000_add_admin_dashboard.sql",
   "20261005030000_allow_public_booking_inserts.sql",
+  "20261005040000_validate_raw_service_values.sql",
 ];
 const destination = new URL("supabase/salon_booking_schema.sql", root);
 const sections = [];
@@ -49,8 +50,8 @@ if (process.argv.includes("--check")) {
   if (await readFile(destination, "utf8") !== bundle) {
     throw new Error("SQL bundle differs from its migration sources. Regenerate it.");
   }
-  console.log("SQL bundle exactly matches all four migration bodies and its fresh-project guard. This is not a PostgreSQL execution test.");
+  console.log(`SQL bundle exactly matches all ${sources.length} migration bodies and its fresh-project guard. This is not a PostgreSQL execution test.`);
 } else {
   await writeFile(destination, bundle, { flag: "w" });
-  console.log("Wrote supabase/salon_booking_schema.sql from all four migrations.");
+  console.log(`Wrote supabase/salon_booking_schema.sql from all ${sources.length} migrations.`);
 }

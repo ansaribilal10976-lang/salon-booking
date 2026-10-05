@@ -1,4 +1,4 @@
--- Run as postgres after ALL four migrations on a DISPOSABLE development DB.
+-- Run as postgres after ALL five migrations on a DISPOSABLE development DB.
 -- psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/public_booking_rls.sql
 -- Synthetic fixtures only. TRUNCATE takes exclusive locks; never run on a live
 -- salon calendar. The transaction rolls back all rows/accounts/configuration.
