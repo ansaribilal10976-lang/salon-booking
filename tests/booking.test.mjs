@@ -147,6 +147,42 @@ test("database slot conflicts become a recoverable 409 without leaking contact d
   }
 });
 
+test("database quotas become friendly 429 responses without exposing private details", async () => {
+  const limits = [
+    ["PHONE_ACTIVE_LIMIT", /upcoming appointments.*contact the salon/i],
+    ["PHONE_WINDOW_LIMIT", /past 24 hours.*try again later/i],
+    ["GLOBAL_SUBMISSION_LIMIT", /daily.*try again tomorrow.*contact the salon/i],
+    ["UNRECOGNIZED_LIMIT", /booking limit.*try again later.*contact the salon/i],
+  ];
+  for (const [message, friendly] of limits) {
+    const result = await submitBooking(input, async () => ({
+      data: null, error: { code: "PT429", message, details: "private quota/customer data", hint: "must-not-leak" },
+    }));
+    assert.equal(result.status, 429);
+    assert.match(result.body.error, friendly);
+    assert.equal("booking" in result.body, false);
+    assert.equal(JSON.stringify(result).includes("private quota/customer data"), false);
+    assert.equal(JSON.stringify(result).includes("must-not-leak"), false);
+    assert.equal(JSON.stringify(result).includes(message), false);
+  }
+});
+
+test("a quota rejection preserves submitted details and the UUID for a later retry", async () => {
+  const before = structuredClone(input);
+  const requests = [];
+  const persist = async (request) => {
+    requests.push(request);
+    return requests.length === 1
+      ? { data: null, error: { code: "PT429", message: "PHONE_WINDOW_LIMIT" } }
+      : savedResult();
+  };
+  assert.equal((await submitBooking(input, persist)).status, 429);
+  assert.equal((await submitBooking(input, persist)).status, 201);
+  assert.deepEqual(input, before);
+  assert.equal(requests[0].bookingId, bookingId);
+  assert.deepEqual(requests[0], requests[1]);
+});
+
 test("database validation errors remain failures instead of false confirmations", async () => {
   const result = await submitBooking(input, async () => ({ data: null, error: { code: "22023", message: "REQUEST_MISMATCH" } }));
   assert.equal(result.status, 400);

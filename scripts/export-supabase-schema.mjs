@@ -7,6 +7,7 @@ const sources = [
   "20261005020000_add_admin_dashboard.sql",
   "20261005030000_allow_public_booking_inserts.sql",
   "20261005040000_validate_raw_service_values.sql",
+  "20261005050000_protect_guest_bookings.sql",
 ];
 const destination = new URL("supabase/salon_booking_schema.sql", root);
 const sections = [];
@@ -37,7 +38,8 @@ begin
      or pg_catalog.to_regclass('public.bookings') is not null
      or pg_catalog.to_regtype('public.booking_status') is not null
      or pg_catalog.to_regclass('private.salon_booking_settings') is not null
-     or pg_catalog.to_regclass('private.salon_admins') is not null then
+     or pg_catalog.to_regclass('private.salon_admins') is not null
+     or pg_catalog.to_regclass('private.booking_quota_events') is not null then
     raise exception using errcode = '42P07',
       message = 'Salon objects already exist. Use only unapplied numbered migrations, not the fresh-project SQL bundle.';
   end if;
