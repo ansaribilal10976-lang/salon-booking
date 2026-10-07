@@ -3,10 +3,22 @@ import type { BookingFieldErrors, BookingRequest } from "./booking-validation.ts
 import { isCalendarDate, isSlotInstant, isUuid, validateBookingRequest } from "./booking-validation.ts";
 
 type QueryResult<T> = { data: T[] | null; error: unknown };
-type Failure = { status: 400 | 409 | 503; body: { error: string; fieldErrors?: BookingFieldErrors } };
+type Failure = { status: 400 | 409 | 429 | 503; body: { error: string; fieldErrors?: BookingFieldErrors } };
+
+const quotaMessages: Record<string, string> = {
+  PHONE_ACTIVE_LIMIT: "This phone number already has the maximum number of upcoming appointments. Please contact the salon for help.",
+  PHONE_WINDOW_LIMIT: "This phone number has reached its booking limit for the past 24 hours. Please try again later or contact the salon.",
+  GLOBAL_SUBMISSION_LIMIT: "The salon has reached its daily online booking limit. Please try again tomorrow or contact the salon.",
+};
 
 function databaseFailure(error: unknown, writing = false): Failure {
   const detail = error && typeof error === "object" ? error as Record<string, unknown> : {};
+  if (detail.code === "PT429") {
+    const message = typeof detail.message === "string" && Object.hasOwn(quotaMessages, detail.message)
+      ? quotaMessages[detail.message]
+      : "The online booking limit has been reached. Please try again later or contact the salon.";
+    return { status: 429, body: { error: message } };
+  }
   if (detail.code === "23P01" || detail.code === "23505" || detail.message === "SLOT_UNAVAILABLE") {
     return { status: 409, body: { error: "That time was just reserved. Please choose another available time." } };
   }

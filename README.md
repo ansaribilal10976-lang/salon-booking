@@ -25,7 +25,23 @@ The mobile-first home page includes a hero, salon service cards showing duration
 - An empty live menu and a failed connection show different states. Neither silently falls back to invented services.
 - **Book Now** opens `/book`. A real service card preselects that service. Booking requires a reachable, migrated Supabase project and real service rows; there is no fake success or local-only reservation fallback.
 
-Brand and display currency are configured in `src/lib/salon.ts` (Muse and USD are draft defaults). The locally served image is illustrative stock photography; provenance is in `public/images/README.md`. Replace these with the actual salon's details before launch.
+Brand and display currency are configured in `src/lib/salon.ts`. **Muse is a placeholder salon name**, not a real-business claim. Prices display in **INR using `en-IN`**, including Indian digit grouping (for example, ₹1,23,456.78). This changes formatting only: it does not convert stored numeric prices or choose the salon time zone. Review the service amounts as rupees before launch.
+
+### Branding and image checklist
+
+Replace or review every branding location before launch:
+
+- `src/lib/salon.ts`: placeholder name, display locale, and currency.
+- `src/app/page.tsx`, `src/app/book/page.tsx`, `src/app/admin/layout.tsx`: hardcoded lowercase **`muse.`** wordmark. The landing footer says “A sample salon concept.”
+- `src/app/layout.tsx`, `src/app/book/page.tsx`, `src/app/admin/layout.tsx`: page titles/descriptions and name-derived metadata.
+- `src/app/page.tsx`, `src/app/book/page.tsx`, `src/components/booking-flow.tsx`: taglines, marketing/booking copy, image alt text, and salon-facing wording.
+- `src/components/icons.tsx`: `FlowerIcon` brand/decorative motif and other inline iconography; there is no separate logo image.
+- `src/app/favicon.ico`: starter black/white Vercel-style favicon; replace with the salon's own icon.
+- `tailwind.config.ts`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/fonts/`: palette, typography, and local Geist fonts. Also review inline colors in the landing page, booking flow, and admin booking/service components.
+- `src/lib/services.ts`: display-only example service names, durations, and prices; real menu rows come from Supabase `services`.
+- `public/images/salon-interior.jpg`, `public/images/README.md`, `src/app/page.tsx`: stock photo, attribution, and usage. The photo includes visible product signage, not proof of the salon's premises or affiliations.
+
+There are **no service images or Supabase Storage calls**. The only photo is already local at `public/images/salon-interior.jpg` (1400×972 JPEG, 175,385 bytes), served with Next Image from `src/app/page.tsx`; no Storage migration is needed. Keep its provenance in `public/images/README.md`, or replace it with an optimized, authorized salon photograph.
 
 ### Content rules
 
@@ -71,7 +87,7 @@ Use the appropriate IANA name for the actual salon. Changing the zone does not m
 
 ### One-file setup for a fresh Supabase project
 
-Use [`supabase/salon_booking_schema.sql`](supabase/salon_booking_schema.sql). It contains the complete tables, constraints, RLS/grants, private admin allowlist, scheduling settings, validation triggers, and application RPCs from all five numbered migrations, inside one transaction. It seeds no admin accounts or sample services/customer data.
+Use [`supabase/salon_booking_schema.sql`](supabase/salon_booking_schema.sql). It contains the complete tables, constraints, RLS/grants, private admin allowlist, scheduling settings, validation triggers, application RPCs, and private quota bookkeeping from all six numbered migrations, inside one transaction. It seeds no admin accounts or sample services/customer data.
 
 1. Open a **fresh development Supabase project** in the dashboard and open **SQL Editor** as the owner.
 2. Paste the entire file and run it once. A preflight check refuses an existing salon schema without dropping or rewriting its objects.
@@ -98,10 +114,13 @@ Apply these migration files **in order**, once each, in the intended development
 3. `supabase/migrations/20261005020000_add_admin_dashboard.sql`
 4. `supabase/migrations/20261005030000_allow_public_booking_inserts.sql`
 5. `supabase/migrations/20261005040000_validate_raw_service_values.sql`
+6. `supabase/migrations/20261005050000_protect_guest_bookings.sql`
 
-Run only migrations that have not yet been applied. If the first three are already applied, run the fourth and fifth. If all four are already applied (including through the previous four-migration bundle), run only the fifth. Do not rerun the original migrations or the fresh-project bundle over that existing schema. Set the salon time zone, then add actual service names, durations in minutes, and approved prices through the Supabase Table Editor. There is no automatic production seed of the example menu.
+Run only migrations that have not yet been applied. If the first five are already applied (including through the previous five-migration bundle), run **only the sixth**. If fewer are applied, run the remaining numbered files in order. Do not rerun the original migrations or the fresh-project bundle over that existing schema. Set the salon time zone, then add actual service names, durations in minutes, and approved prices through the Supabase Table Editor. There is no automatic production seed of the example menu.
 
-The fifth migration removes the price column's fixed-scale coercion so database CHECKs see the raw numeric value before rounding. Prices must be finite, nonnegative, at most `99999999.99`, and exactly representable to two decimal places: `1.239` and `-0.001` fail on raw INSERT/UPDATE; equivalent trailing-zero values such as `1.2300` remain valid. Existing price values are preserved. A trigger trims outer spaces from service names on writes; the migration deliberately trims existing padded names, and validated constraints bound the actual stored name to 1–120 characters with no controls. Internal spaces remain unchanged. RLS and column-level privileges are preserved.
+The fifth migration removes the price column's fixed-scale coercion so database CHECKs see the raw numeric value before rounding. Prices must be finite, nonnegative, at most `99999999.99`, and exactly representable to two decimal places: `1.239` and `-0.001` fail on raw INSERT/UPDATE; equivalent trailing-zero values such as `1.2300` remain valid. Existing price values are preserved. A trigger trims outer spaces from service names on writes; the migration deliberately trims existing padded names, and validated constraints bound the actual stored name to 1–120 characters with no controls. Internal spaces remain unchanged. RLS and column-level privileges are preserved by that migration.
+
+The sixth migration revokes both table- and column-level booking INSERT privileges for `PUBLIC`, `anon`, and `authenticated`, removes the public INSERT policy, and replaces `create_booking` with database-enforced quotas. It preserves existing appointments, guest RPC permissions, admin-only reads/status actions, contact/schedule validation, idempotent receipts, and overlap protection. Private settings hold owner-editable limits; `private.booking_quota_events` records new successful RPC submissions. Historical creation times are not fabricated, so submission-window accounting starts when this migration is applied; active/future checks include existing rows.
 
 | Table | Columns |
 | --- | --- |
@@ -112,7 +131,7 @@ IDs are generated automatically unless an idempotency UUID is supplied. Names an
 
 `end_time` snapshots the service duration at reservation time. A trigger derives it on insert and when a booking's service/start changes, and prevents manual shortening. Later service-duration changes do not move existing appointments. The second migration backfills old bookings without deleting records; existing overlapping reservations cause migration failure and must be reviewed by the owner, not silently cancelled.
 
-Direct public booking submissions default to `pending` for admin confirmation. Guest website/RPC bookings are explicitly `confirmed` after saving. Other enum values are `completed` and `cancelled`.
+Direct public booking INSERT is **denied**. Guest website/RPC bookings are explicitly `confirmed` after saving. Existing or owner-maintained `pending` rows still support admin confirmation. Other enum values are `completed` and `cancelled`.
 
 ### Privacy and RPCs
 
@@ -121,15 +140,16 @@ Both public tables have row-level security enabled. The access rules are:
 | Action | Anonymous visitor | Ordinary signed-in user | Allowlisted admin |
 | --- | --- | --- | --- |
 | Read services | Yes | Yes | Yes |
-| Submit a new booking | Yes | Yes | Yes |
+| Submit a new booking through `create_booking` (quota-limited) | Yes | Yes | Yes |
+| Direct booking INSERT | **DENIED** | **DENIED** | **DENIED** |
 | Read booking rows | No | No | Yes |
 | Add/edit/delete services | No | No | Yes |
 | Confirm/cancel bookings through admin RPC | No | No | Yes |
 | Direct booking UPDATE/DELETE | No | No | No |
 
-The fourth migration grants `anon` and `authenticated` INSERT privileges on **only** `customer_name`, `phone`, `service_id`, and `slot_time`, with a pending-status INSERT policy. IDs and end times are generated/derived by the database; customers cannot supply `id`, `status`, or `end_time`. An authenticated SELECT grant is filtered by the admin allowlist policy, so ordinary accounts cannot read customer records—even their own inserted rows. Anonymous booking SELECT remains ungranted. Service edits still require an allowlisted admin through RLS.
+The sixth migration **revokes the fourth migration's direct INSERT grants** and drops its public INSERT policy. No code in `src/` uses the old grant. Direct INSERT is denied for `anon` and `authenticated`, including allowlisted admins using that API role, even with valid customer-only fields and without RETURNING. All guest submissions must use `create_booking`; admin confirmation/cancellation uses the authorized admin RPC.
 
-Direct Supabase inserts must omit `.select()`/RETURNING and use the allowed fields only. A database trigger trims/validates contact fields and enforces the salon-local schedule, future/90-day date range, half-hour starts, and finishing by 8 PM. The existing exclusion constraint blocks same-time and full-duration overlaps. Direct inserts cannot bypass the RPC safeguards by posting a cancelled status or shortened end time.
+An authenticated SELECT grant is filtered by the admin allowlist policy, so ordinary accounts cannot read any customer rows. Anonymous booking SELECT remains ungranted. Service edits still require an allowlisted admin through RLS. Retained validation/duration triggers and the exclusion constraint protect the RPC's schedule, contact fields, duration, and overlapping slots. Private quota settings/events cannot be read or edited through the public roles.
 
 The website keeps using `create_booking` for atomic confirmation, idempotent retries, and that request's receipt. Returning a validated booking receipt from this RPC does not grant permission to list or read the bookings table.
 
@@ -141,7 +161,39 @@ The following narrowly scoped guest SECURITY DEFINER functions are granted to `a
 
 Next.js `GET /api/availability` and `POST /api/bookings` call these RPCs using the public key. The API validates input and omits raw database errors. Private responses and availability are not cached. The booking endpoint validates content type, enforces a 4096-byte limit while streaming the body (oversized reads stop immediately), and rejects explicit cross-origin requests. RPCs still allow public guest access directly; this origin check is not an anti-abuse boundary.
 
-**Before public production launch**, add an anti-abuse solution (rate limits/CAPTCHA at a trusted gateway) covering both direct Supabase RPC access and the public booking INSERT endpoint. Guest booking currently has no identity verification, customer cancellation UI, holiday schedule, multi-stylist capacity, payments, or notification integration. Staff access is managed through the admin allowlist below; never open the entire bookings table to all signed-in users.
+### Booking limits and remaining abuse risk
+
+**All limits are stored in the singleton row of `private.salon_booking_settings`.** `create_booking` reads this row for each new reservation; enforcement does not hardcode the defaults. The owner can change any or all limits with **one UPDATE, without another migration or application deployment**. Settings remain inaccessible to public API roles and are not returned by `get_booking_config`.
+
+| Database control | Settings column | Default | Counting / expiry |
+| --- | --- | --- | --- |
+| Active future bookings per phone | `max_active_future_per_phone` | **5** | Pending/confirmed rows whose start is still future, including pre-migration bookings; starts/cancellations release capacity |
+| New bookings per phone | `max_phone_bookings_per_24h` | **5 per rolling 24 hours** | Successful RPC inserts, even if later cancelled; thus at most 5 in any hour at the default setting, with no separate hourly quota |
+| Global daily submissions | `max_daily_submissions` | **40 per salon-local calendar day** | Successful new future reservations across every phone and appointment date; resets at salon-local midnight, not a rolling day |
+
+Phones are matched by the **last 10 digits for quotas**: country prefixes, leading digits, spaces, punctuation, and `+` do not create separate budgets; shorter valid numbers keep all their digits. Stored/displayed phones and exact receipt matching stay unchanged; no country-code inference or phone-ownership verification is performed. The per-phone default of five allows repeat/family bookings. These per-phone limits only stop casual repeats: an attacker can rotate phone numbers. The **global daily cap and a trusted-gateway CAPTCHA** are the real controls against that rotation. The global default is **40 new submissions/day**, not an appointment-date capacity limit; the owner can adjust it for legitimate demand. There is **no separate per-appointment-date quota**: the shared calendar has at most 20 half-hour starts/day, and the existing exclusion constraint prevents overlapping reservations. These limits do not expand calendar capacity.
+
+Exact same-UUID/details retries return the existing saved receipt **before quota checks**, add no event, and have **no time-based expiry while the booking row exists**, including past/cancelled bookings. A mismatched payload remains rejected. Cancelled bookings still consume rolling-phone and daily-submission quotas. Expired ledger events are pruned on successful new bookings; time-bounded queries enforce expiry even before pruning.
+
+Quota violations raise database `PT429`, which PostgREST exposes as HTTP 429; `/api/bookings` maps it to a friendly, limit-specific message (wait or contact the salon). The UI retains contact details, selected service/date/time, and request UUID; it never displays a false confirmation. All new RPC writes serialize quota checks, booking insertion, and ledger accounting in one transaction. PostgreSQL READ COMMITTED snapshots are required for new writes; unusual higher-isolation SQL callers fail safely rather than count stale data.
+
+**Protection boundary:** database quotas cover both direct Supabase `create_booking` calls and `/api/bookings`. Revoked INSERT privileges close the alternate public write path. Origin checking, JSON validation, and the 4096-byte body cap protect **only `/api/bookings`**, not direct RPC access. Postgres sees infrastructure connections, not a reliable visitor IP; there is no claimed database per-IP limit.
+
+**These limits reduce but do not prevent abuse. Per-phone limits only stop casual repeats; an attacker rotating phone numbers can exhaust the global submission cap and block online bookings for that submission day, across all appointment dates.** The global cap and a trusted-gateway CAPTCHA are the real controls for this abuse pattern. Quotas bound saved reservations, not request traffic; they are not identity verification or complete denial-of-service protection. The CAPTCHA/rate-limit gateway must cover direct Supabase RPC access as well as the website before claiming broader protection.
+
+**Owner response:** inspect `/admin`, cancel junk bookings to release occupied slots and per-phone active-booking capacity, and raise the global daily submission cap via owner SQL if legitimate customers remain blocked. Cancellation **does not refund the daily submission quota** (nor the phone's rolling quota). For example, after investigation, this single owner UPDATE keeps both phone limits at five and deliberately raises the global daily submission cap from 40 to 60. Change any of the three values as needed:
+
+```sql
+update private.salon_booking_settings
+set max_active_future_per_phone = 5,
+    max_phone_bookings_per_24h = 5,
+    max_daily_submissions = 60
+where singleton;
+```
+
+The defaults are **5 active future bookings per phone, 5 new bookings per phone per rolling 24 hours, and 40 global submissions per salon-local day**; restore them after the incident if appropriate. Limits must be positive integers. Do not re-grant direct INSERT, delete ledger events to bypass budgets, or expose these controls publicly. Raising a cap restores headroom but does not stop an attacker from exhausting it again. No SQL was executed as part of this implementation.
+
+Guest booking still has no identity verification, customer cancellation UI, holiday schedule, multi-stylist capacity, payments, or notification integration. Staff access is managed through the admin allowlist below; never open the bookings table to all signed-in users.
 
 ## Admin dashboard
 
@@ -176,7 +228,7 @@ To revoke access, delete the user's row from `private.salon_admins` as the owner
 
 ### Admin access boundaries
 
-`public.is_admin()` checks a private allowlist against `auth.uid()`. `list_admin_bookings` and `admin_set_booking_status` independently require that role. They are executable by `authenticated` only, with fixed empty search paths; anonymous RPC execution is denied. The service policies and column-level grants permit only admin writes to `name`, `duration`, and `price`. Authenticated users may submit only the same restricted booking fields as guests; there are still no direct booking UPDATE/DELETE grants. Admin confirmation/cancellation remains an explicitly authorized RPC operation.
+`public.is_admin()` checks a private allowlist against `auth.uid()`. `list_admin_bookings` and `admin_set_booking_status` independently require that role. They are executable by `authenticated` only, with fixed empty search paths; anonymous RPC execution is denied. The service policies and column-level grants permit only admin writes to `name`, `duration`, and `price`. Authenticated users submit through the same quota-limited `create_booking` RPC as guests; direct booking INSERT/UPDATE/DELETE is denied even for an allowlisted admin's API role. Admin confirmation/cancellation remains an explicitly authorized RPC operation.
 
 All `/admin` and `/api/admin` responses are private/no-store. Mutating APIs require a same-origin request, verify identity/role before parsing work, cap JSON inputs, validate fields, and do not expose raw auth/database errors or use service-role credentials. Supabase RLS/RPC checks remain authoritative even if someone bypasses the dashboard. A session cookie alone is not sufficient. If middleware client construction or authentication refresh throws, it returns a sanitized private 503 instead of forwarding the protected request; this also avoids redirect loops when login configuration is invalid.
 
@@ -186,24 +238,41 @@ All `/admin` and `/api/admin` responses are private/no-store. Mutating APIs requ
 npm run lint
 npm run typecheck
 npm test
+node scripts/export-supabase-schema.mjs --check
+# Production build on a supported runtime:
 npm run build
 ```
 
-Unit tests use Node's built-in runner and TypeScript stripping (Node 22.6+). They cover service source/error states, calendar/contact input validation, salon-zone formatting, availability response privacy, conflict handling, unknown write outcomes, safe receipt validation, idempotency request propagation, admin identity/role denial, API operation gating, service CRUD validation/read-back, booking status actions, pagination, and safe error responses. HTTP regressions execute the actual route/middleware source to check streaming UTF-8 byte limits, early cancellation (including failed/stalled cancellation), inclusive 4096-byte input, malformed JSON, and fail-closed responses for invalid Supabase URLs. Database/auth adapters are mocked in these tests; they do not prove real authentication, database permissions, saves, or races.
+Unit tests use Node's built-in runner and TypeScript stripping (Node 22.6+). They cover service source/error states, calendar/contact input validation, salon-zone formatting, availability response privacy, conflict handling, unknown write outcomes, safe receipt validation, idempotency request propagation, admin identity/role denial, API operation gating, service CRUD validation/read-back, booking status actions, pagination, and safe error responses. HTTP regressions execute the actual route/middleware source to check streaming UTF-8 byte limits, early cancellation (including failed/stalled cancellation), inclusive 4096-byte input, malformed JSON, and fail-closed responses for invalid Supabase URLs. Additional regressions cover friendly/sanitized quota 429s and UUID preservation, actual health-route authorization/configuration/timeout/no-store behavior, INR formatting, and SQL-runner safety with a fake `psql`. Database/auth adapters are mocked in these tests; they do not prove real authentication, database permissions, saves, or races.
 
-Latest local checks for audit fixes 2–5: `npm run lint` passed, `npm run typecheck -- --incremental false` passed, all 56 tests passed under `npm test`, and `node scripts/export-supabase-schema.mjs --check` passed against all five migration bodies. SQL runtime tests remain unexecuted. The previous `npm run build` attempt failed at the unavailable Android ARM64 SWC binary before production compilation; build was not rerun for these fixes. Unit/HTTP tests and schema text parity are not proof of live database authorization.
+Latest local Stage 1–4 checks (rerun after removing the appointment-date quota, setting the global daily default to 40, and applying the phone-key/health-header fixes from `fix1.md`): `npm run lint` passed, `npm run typecheck` passed, **122 tests passed with zero failures/skips** under `npm test`, and `node scripts/export-supabase-schema.mjs --check` matched all six migration bodies and the fresh-project guard. `bash -n scripts/run-sql-tests.sh` and `git diff --check` also passed. Quota 429 regressions were first observed failing against the old error mapping, then passed with the new handling. SQL-runner tests used only a fake `psql`.
+
+SQL runtime tests remain **unexecuted**. The previous `npm run build` attempt failed at the unavailable Android ARM64 SWC binary before production compilation; it was not rerun for Stages 1–4, and no production build is claimed here. Unit/HTTP tests and schema text parity are not proof of live database authorization. Tests emitted nonfatal existing Node module-format and OpenSSL certificate-directory warnings.
 
 SQL tests on a **disposable development database**:
 
 - `supabase/tests/schema.sql`: base constraints and API-role table privacy; rolls back synthetic fixtures.
-- `supabase/tests/public_booking_rls.sql`: direct anonymous/authenticated submissions, pending defaults, protected fields, no read-back permission, invalid schedules/contacts, overlap protection, admin-only reads/service edits, and compatibility with the website confirmation RPC. Runs after all five migrations and rolls back fixtures; it temporarily truncates the test calendar, so use only a disposable database.
-- `supabase/tests/services_price.sql`: raw INSERT/UPDATE regression for excessive price precision (`1.239`, `-0.001`), valid boundaries, overflow, and non-finite values; covers owner and allowlisted authenticated writes without truncating the calendar. Run after all five migrations on a disposable database; fixtures roll back.
-- `supabase/tests/services_name.sql`: raw INSERT/UPDATE regression for leading/trailing spaces, huge padding, actual stored-length bounds, internal spaces, and control characters; covers owner and allowlisted authenticated writes without truncating the calendar. Run after all five migrations on a disposable database; fixtures and temporary trigger changes roll back.
+- `supabase/tests/public_booking_rls.sql`: **direct INSERT denial** for anonymous/authenticated roles (including valid customer-only writes), no surviving column grants, private-ledger denial, admin-only reads/service edits, and preserved `create_booking` save/retry/validation/overlap compatibility. Runs after all six migrations and rolls back fixtures; temporarily truncates the test calendar/ledger, so use only a disposable local database.
+- `supabase/tests/booking_rate_limits.sql`: active and rolling-phone boundaries, equivalent phone formatting, cancellation accounting, the exact 40-submission boundary, owner cap increase, changing all three limits in one UPDATE and enforcing nondefault settings, salon-local submission-day limits, full shared-calendar capacity/overlap protection, expiry, historical rows, both public roles, and retries at exhausted quotas. Unexecuted; fixtures/configuration roll back.
+- `supabase/tests/services_price.sql`: raw INSERT/UPDATE regression for excessive price precision (`1.239`, `-0.001`), valid boundaries, overflow, and non-finite values; covers owner and allowlisted authenticated writes without truncating the calendar. Run after all six migrations on a disposable database; fixtures roll back.
+- `supabase/tests/services_name.sql`: raw INSERT/UPDATE regression for leading/trailing spaces, huge padding, actual stored-length bounds, internal spaces, and control characters; covers owner and allowlisted authenticated writes without truncating the calendar. Run after all six migrations on a disposable database; fixtures and temporary trigger changes roll back.
 - `supabase/tests/admin.sql`: anonymous/non-admin denial, forged metadata rejection, allowlisted admin service CRUD and booking access, status transitions, time-zone filters, and pagination; synthetic accounts/fixtures are rolled back. Use a disposable development database.
 - `supabase/tests/booking.sql`: schedule boundaries, half-hour grid, time zones, contact validation, booking save/read-back, overlaps, cancellation, snapshots, receipt retries, RPC permissions. Rolls back fixtures but temporarily truncates the test calendar inside its transaction; **never run on a live booking database**.
-- `supabase/tests/booking_concurrency.sql`: explicit two-connection idempotency and overlap race tests. Read the file's setup/session/cleanup instructions. Setup and winning reservations commit; use a disposable database and run cleanup.
+- `supabase/tests/booking_concurrency.sql`: explicit two-connection idempotency, overlap, and global/active-phone/rolling-phone quota races with nonoverlapping slots. Read the setup/session/cleanup instructions. Setup/winners **commit**; use a disposable local database and always run cleanup. Never run automatically.
 
-If using psql, use `-v ON_ERROR_STOP=1` so failures fail the command. SQL tests/migrations have **not been executed here**: PostgreSQL/psql/Supabase CLI are unavailable. A complete public key is still needed for a live connection; the provided truncated value was not used.
+### Guarded SQL runner — do not use on production
+
+`scripts/run-sql-tests.sh` uses **only `$TESTDB`**; it never falls back to `DATABASE_URL` or application credentials. It refuses missing/whitespace-only values, the live ref `ytlmlixldsxfaveaokkv` (including case/percent-encoding variations), remote/ambiguous targets, and URI target overrides. Supply an explicit `postgres://` or `postgresql://` URI with a database and loopback host (`127.0.0.1`, `localhost`, or `[::1]`). Libpq conninfo/services/Unix sockets are deliberately unsupported. Only `sslmode`, `connect_timeout`, and `application_name` query parameters are accepted.
+
+On an already migrated, **disposable local** database, the owner may run:
+
+```bash
+TESTDB='postgresql://postgres@127.0.0.1:5432/salon_test' bash scripts/run-sql-tests.sh
+```
+
+It runs ordinary `supabase/tests/*.sql` with `psql -X -w -v ON_ERROR_STOP=1`, stops at the first failure, ignores psql startup scripts/inherited connection-target defaults, never prints the connection string, and **excludes `booking_concurrency.sql`**, printing its separate manual instructions instead. Fixtures can truncate/lock the calendar: loopback is only a target guard, not proof the selected database is safe. Do not point it at a production tunnel. Tests of the runner use a fake `psql`, never a database.
+
+**The runner has not been used against a database; SQL migrations/tests have not been executed here.** No live/remote connection or credentials were used. Schema text parity and mocked application tests do not verify SQL syntax, permissions, saves, expiry, or races.
 
 The local Next.js production build is blocked by the unavailable Android ARM64 SWC binary. Browser rendering and interactions require verification on supported Linux/macOS/Windows or Vercel.
 
@@ -217,11 +286,11 @@ After configuring a real key, applying all required migrations, and adding servi
 4. Test dates outside the horizon, past times, non-grid timestamps via the RPC, invalid contacts, an empty menu, offline availability, and a stale selection.
 5. Retry an unchanged request with the same UUID and check only one row exists. Test a mismatched payload, which must not expose the saved receipt.
 6. Verify keyboard navigation, radio selection, step-focus changes, error announcements, phone input, 200% zoom, no horizontal overflow, and the salon timezone (not browser timezone).
-7. Verify anonymous booking SELECT/UPDATE/DELETE fail, while a restricted booking INSERT and the three guest RPCs work. Verify ordinary signed-in users also cannot read customer rows or edit services. Do not treat unit tests as proof of this database boundary.
+7. Verify direct booking INSERT/UPDATE/DELETE fail for both `anon` and `authenticated`, anonymous SELECT fails, and the three guest RPCs still work. Exercise quota exhaustion and unchanged retries, checking 429 messages and no duplicate ledger events. Verify ordinary signed-in users also cannot read customer rows or edit services. Do not treat unit tests as proof of this database boundary.
 
 ### Manual admin checks
 
-After applying all five migrations and provisioning an admin on a supported runtime:
+After applying all six migrations and provisioning an admin on a supported runtime:
 
 1. Open `/admin` anonymously and confirm redirection to login. Test invalid credentials and a signed-in ordinary account; neither may see customer bookings or mutate services.
 2. Sign in as an allowlisted admin. Verify Today/Upcoming against the configured salon zone, including appointments around midnight and pagination beyond 50 rows.
@@ -230,8 +299,16 @@ After applying all five migrations and provisioning an admin on a supported runt
 5. Revoke the admin membership while the dashboard is open. The next read/write must fail. Check direct Supabase calls as anon and an ordinary authenticated user, not just the UI.
 6. Sign out, then reload/back-navigate to the dashboard. Verify protected requests require sign-in. Check keyboard navigation, form validation, cancellation/delete prompts, and mobile layouts at 320px/375px widths.
 
-Browser/admin-auth and SQL checks have not been run here; the missing complete key and local Android compiler limitation still block live end-to-end verification. Local lint, TypeScript, unit tests, and Tailwind compilation are separate checks, not proof of live authentication or database authorization.
+Browser/admin-auth and SQL checks have not been run here. Live end-to-end verification was not attempted; the local Android compiler limitation also blocks production/browser verification here. Local lint, TypeScript, unit tests, and Tailwind compilation are separate checks, not proof of live authentication or database authorization.
+
+## Health check and daily cron
+
+`GET /api/health` uses a **stateless public-key Supabase client**, not user cookies or service-role credentials. It calls only `get_booking_config`, with a five-second abort timeout and no-store upstream fetches. It returns only `200 {"ok":true}` for one valid configuration row; missing/invalid configuration or upstream failures return sanitized `503 {"ok":false}`. All responses are no-store and disclose no settings, customer data, or raw errors.
+
+`vercel.json` schedules this endpoint daily at **03:00 UTC** (`0 3 * * *`). Set optional **server-only `CRON_SECRET`** in the deployment environment to require an exact `Authorization: Bearer <secret>` header; Vercel Cron supplies it when configured. Missing/wrong authorization returns `401 {"ok":false}` before database work. Leave the variable unset/empty for public checks. Keep real values in environment configuration, never committed files or query strings; `.env.local.example` contains only a blank placeholder. Manual calls to a protected route must provide the same header.
+
+A daily cron/configuration read is a **best-effort keep-alive**, not a guarantee against Supabase pausing, provider suspension, cron delivery failure, or downtime. Verify the production route and Vercel cron logs after deployment; no cron execution or live health request was performed here.
 
 ## Vercel deployment
 
-Import `salon-booking/` using the Next.js preset. Configure the two public environment variables for the appropriate Vercel environments before building; redeploy after changing them. Apply all required SQL migrations separately in Supabase and set the time zone. Default build command: `npm run build`. Nothing has been deployed by this task.
+Import `salon-booking/` using the Next.js preset. Configure the two public environment variables and optional `CRON_SECRET` for the appropriate Vercel environments before building; redeploy after changing them. Apply all required SQL migrations separately and set the actual salon time zone. Default build command: `npm run build`. Deployment state is not asserted or verified by these local code changes.

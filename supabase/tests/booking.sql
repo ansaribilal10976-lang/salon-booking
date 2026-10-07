@@ -1,12 +1,12 @@
 -- Run after ALL migrations as postgres in a DEVELOPMENT database only.
--- With psql: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/booking.sql
+-- With psql: psql "$TESTDB" -v ON_ERROR_STOP=1 -f supabase/tests/booking.sql
 -- Fixtures temporarily replace the calendar inside this rolled-back transaction.
 -- Never use this test on a live booking database: TRUNCATE takes exclusive locks.
 begin;
 set local timezone = 'Pacific/Honolulu'; -- Intentionally not the salon timezone.
 set local request.jwt.claims = '{}';
 set local request.jwt.claim.sub = '';
-truncate table public.bookings, public.services;
+truncate table public.bookings, public.services, private.booking_quota_events;
 
 create function pg_temp.booking_assert(p_ok boolean, p_label text)
 returns void language plpgsql as $$
@@ -57,7 +57,9 @@ declare
   v_function text;
   v_bad_time timestamptz;
 begin
-  update private.salon_booking_settings set time_zone = 'UTC' where singleton;
+  update private.salon_booking_settings set time_zone = 'UTC',
+    max_active_future_per_phone = 5, max_phone_bookings_per_24h = 5,
+    max_daily_submissions = 40 where singleton;
   insert into public.services (id, name, duration, price) values
     (v_short, 'Synthetic 30-minute service', 30, 10),
     (v_medium, 'Synthetic 45-minute service', 45, 15),
@@ -268,7 +270,7 @@ begin
     perform pg_temp.booking_assert(not has_function_privilege(v_role, 'private.set_booking_end_time()', 'EXECUTE')
       and not has_function_privilege(v_role, 'private.validate_salon_booking_settings()', 'EXECUTE'), 'helper execution is not public');
     perform pg_temp.booking_assert(not has_table_privilege(v_role, 'public.bookings', 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
-      and not has_any_column_privilege(v_role, 'public.bookings', 'UPDATE,REFERENCES'), 'no direct mutation or unrestricted insert privileges');
+      and not has_any_column_privilege(v_role, 'public.bookings', 'INSERT,UPDATE,REFERENCES'), 'all direct booking writes are denied');
     perform pg_temp.booking_assert(has_table_privilege(v_role, 'public.bookings', 'SELECT') = (v_role = 'authenticated')
       and has_any_column_privilege(v_role, 'public.bookings', 'SELECT') = (v_role = 'authenticated'), 'booking SELECT grant requires authenticated role and RLS');
     perform pg_temp.booking_assert(not has_table_privilege(v_role, 'private.salon_booking_settings', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER'), 'settings are private');
@@ -283,6 +285,9 @@ begin
       perform pg_temp.booking_assert((select count(*) = 0 from public.bookings), 'ordinary authenticated users cannot read bookings through RLS');
     end if;
     perform pg_temp.booking_expect_error('select * from private.salon_booking_settings', '42501');
+    perform pg_temp.booking_expect_error('select * from private.booking_quota_events', '42501');
+    perform pg_temp.booking_expect_error(format('insert into public.bookings (service_id,slot_time,customer_name,phone) values (%L,%L,%L,%L)',
+      v_short, v_start + interval '6 hours', 'Valid Direct Denied', '1234567'), '42501');
     perform pg_temp.booking_expect_error(format('insert into public.bookings (service_id,slot_time,customer_name,phone,status) values (%L,%L,%L,%L,%L)',
       v_short, v_start, 'Forbidden Status', '1234567', 'cancelled'), '42501');
     perform pg_temp.booking_expect_error('update public.bookings set status = ''cancelled''', '42501');

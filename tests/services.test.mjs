@@ -57,10 +57,16 @@ test("a null response is treated as unavailable", async () => {
   assert.deepEqual(catalog, { source: "unavailable", services: [] });
 });
 
-test("prices preserve cents and accept zero-price services", () => {
-  assert.equal(formatPrice(65), "$65");
-  assert.equal(formatPrice(49.5), "$49.50");
-  assert.equal(formatPrice(0), "$0");
+test("INR prices preserve amounts and paise and accept zero-price services", () => {
+  assert.equal(formatPrice(65), "₹65");
+  assert.equal(formatPrice(49.5), "₹49.50");
+  assert.equal(formatPrice(0.05), "₹0.05");
+  assert.equal(formatPrice(0), "₹0");
+});
+
+test("INR prices use Indian digit grouping for integers and decimals", () => {
+  assert.equal(formatPrice(1234567), "₹12,34,567");
+  assert.equal(formatPrice(1234567.89), "₹12,34,567.89");
 });
 
 test("duration labels cover minutes, whole hours, and mixed durations", () => {

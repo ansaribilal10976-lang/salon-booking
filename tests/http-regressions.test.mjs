@@ -85,6 +85,38 @@ test("booking route enforces its 4 KB byte cap before consuming the full stream"
   assert.equal(accepted.length, 2, "malformed JSON must not reach persistence");
 });
 
+test("booking route forwards real quota errors as private friendly 429s through the public RPC", async () => {
+  const operations = await import("../src/lib/booking-operations.ts");
+  const calls = [];
+  const { POST } = loadSource("../src/app/api/bookings/route.ts", {
+    "@/lib/booking-operations": operations,
+    "@/lib/supabase/server": { createClient: () => ({ rpc: (name, args) => {
+      calls.push({ name, args });
+      return { abortSignal: async () => ({ data: null, error: {
+        code: "PT429", message: "GLOBAL_SUBMISSION_LIMIT", details: "private fixture data",
+      } }) };
+    } }) },
+  });
+  const payload = {
+    bookingId: "11111111-1111-4111-8111-111111111111", serviceId: "22222222-2222-4222-8222-222222222222",
+    slotTime: "2030-01-15T10:00:00Z", customerName: "Synthetic Guest", phone: "1234567",
+  };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { request } = streamedRequest(JSON.stringify(payload));
+    const response = await POST(request);
+    assert.equal(response.status, 429);
+    assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+    const body = await response.json();
+    assert.match(body.error, /daily.*try again tomorrow.*contact the salon/i);
+    assert.equal(JSON.stringify(body).includes("private fixture data"), false);
+    assert.equal("booking" in body, false);
+  }
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].name, "create_booking");
+  assert.equal(calls[0].args.p_booking_id, payload.bookingId);
+  assert.deepEqual(calls[0], calls[1], "unchanged retries keep the same UUID and contact details");
+});
+
 test("middleware fails closed for an invalid Supabase URL on admin pages and APIs", async (t) => {
   const previous = {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL,

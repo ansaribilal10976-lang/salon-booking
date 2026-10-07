@@ -1,8 +1,9 @@
-// Placeholder brand and display currency. Set these for the real salon before launch.
+// Muse is a placeholder brand; replace it with the real salon name before launch.
+// Display prices as INR only; stored amounts and the booking timezone are unchanged.
 export const salon = {
   name: "Muse",
-  locale: "en-US",
-  currency: "USD",
+  locale: "en-IN",
+  currency: "INR",
 };
 
 export function formatPrice(price: number): string {
