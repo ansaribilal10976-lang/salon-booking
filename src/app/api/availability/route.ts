@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get("serviceId"),
     request.nextUrl.searchParams.get("date"),
     async (serviceId, date) => {
-      const supabase = createClient();
+      const supabase = await createClient();
       return await supabase.rpc("get_available_slots", { p_service_id: serviceId, p_date: date })
         .abortSignal(AbortSignal.timeout(5000));
     },

@@ -15,7 +15,7 @@ export default async function Home() {
       key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     },
     async () => {
-      const supabase = createClient();
+      const supabase = await createClient();
       return await supabase
         .from("services")
         .select("id, name, duration, price")

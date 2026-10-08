@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await submitBooking(input, async (values) => {
-    const supabase = createClient();
+    const supabase = await createClient();
     return await supabase.rpc("create_booking", {
       p_booking_id: values.bookingId,
       p_service_id: values.serviceId,

@@ -7,7 +7,7 @@ import { getAdminAccess } from "@/lib/admin-server";
 import { parseAdminFilters } from "@/lib/admin-validation";
 import type { AdminBooking, BookingConfiguration, Service } from "@/types/database";
 
-export default async function AdminPage({ searchParams }: { searchParams: { view?: string | string[]; page?: string | string[] } }) {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; page?: string | string[] }> }) {
   const { supabase, access } = await getAdminAccess();
   if (!access.allowed) {
     if (access.status === 401) redirect("/admin/login");
@@ -15,7 +15,8 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
     return <AdminUnavailable message={access.error} />;
   }
   if (!supabase) return <AdminUnavailable message="The admin workspace is unavailable right now." />;
-  const filters = parseAdminFilters(searchParams.view, searchParams.page);
+  const resolvedSearchParams = await searchParams;
+  const filters = parseAdminFilters(resolvedSearchParams.view, resolvedSearchParams.page);
   let config: BookingConfiguration | undefined;
   let bookings: AdminBooking[] = [];
   let services: Service[] = [];

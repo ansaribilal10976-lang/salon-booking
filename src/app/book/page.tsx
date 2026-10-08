@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 async function loadBookingPage(): Promise<{ services: Service[]; config: BookingConfiguration } | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const [menu, settings] = await Promise.all([
       supabase.from("services").select("id, name, duration, price").order("name").abortSignal(AbortSignal.timeout(5000)),
       supabase.rpc("get_booking_config").abortSignal(AbortSignal.timeout(5000)),
@@ -33,9 +33,10 @@ async function loadBookingPage(): Promise<{ services: Service[]; config: Booking
   }
 }
 
-export default async function BookPage({ searchParams }: { searchParams: { service?: string | string[] } }) {
+export default async function BookPage({ searchParams }: { searchParams: Promise<{ service?: string | string[] }> }) {
   const data = await loadBookingPage();
-  const initialServiceId = typeof searchParams.service === "string" ? searchParams.service : "";
+  const resolvedSearchParams = await searchParams;
+  const initialServiceId = typeof resolvedSearchParams.service === "string" ? resolvedSearchParams.service : "";
 
   return (
     <>

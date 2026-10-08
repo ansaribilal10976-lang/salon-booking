@@ -1,6 +1,6 @@
 # Salon Booking
 
-Next.js 14 App Router, TypeScript, Tailwind CSS, and Supabase Postgres. Deployment target: Vercel. Phase 2 implements guest appointment booking; there is no account requirement or payment collection.
+Next.js 15 App Router, TypeScript, Tailwind CSS, and Supabase Postgres. Deployment target: Vercel. Phase 2 implements guest appointment booking; there is no account requirement or payment collection.
 
 ## Development
 
@@ -235,7 +235,6 @@ All `/admin` and `/api/admin` responses are private/no-store. Mutating APIs requ
 ## Checks and current verification gaps
 
 ```bash
-npm run lint
 npm run typecheck
 npm test
 node scripts/export-supabase-schema.mjs --check
@@ -245,9 +244,9 @@ npm run build
 
 Unit tests use Node's built-in runner and TypeScript stripping (Node 22.6+). They cover service source/error states, calendar/contact input validation, salon-zone formatting, availability response privacy, conflict handling, unknown write outcomes, safe receipt validation, idempotency request propagation, admin identity/role denial, API operation gating, service CRUD validation/read-back, booking status actions, pagination, and safe error responses. HTTP regressions execute the actual route/middleware source to check streaming UTF-8 byte limits, early cancellation (including failed/stalled cancellation), inclusive 4096-byte input, malformed JSON, and fail-closed responses for invalid Supabase URLs. Additional regressions cover friendly/sanitized quota 429s and UUID preservation, actual health-route authorization/configuration/timeout/no-store behavior, INR formatting, and SQL-runner safety with a fake `psql`. Database/auth adapters are mocked in these tests; they do not prove real authentication, database permissions, saves, or races.
 
-Latest local Stage 1–4 checks (rerun after removing the appointment-date quota, setting the global daily default to 40, and applying the phone-key/health-header fixes from `fix1.md`): `npm run lint` passed, `npm run typecheck` passed, **122 tests passed with zero failures/skips** under `npm test`, and `node scripts/export-supabase-schema.mjs --check` matched all six migration bodies and the fresh-project guard. `bash -n scripts/run-sql-tests.sh` and `git diff --check` also passed. Quota 429 regressions were first observed failing against the old error mapping, then passed with the new handling. SQL-runner tests used only a fake `psql`.
+Latest local Stage 1–4 checks (rerun after removing the appointment-date quota, setting the global daily default to 40, and applying the phone-key/health-header fixes from `fix1.md`): `npm run typecheck` passed, **122 tests passed with zero failures/skips** under `npm test`, and `node scripts/export-supabase-schema.mjs --check` matched all six migration bodies and the fresh-project guard. `bash -n scripts/run-sql-tests.sh` and `git diff --check` also passed. Quota 429 regressions were first observed failing against the old error mapping, then passed with the new handling. SQL-runner tests used only a fake `psql`.
 
-SQL runtime tests remain **unexecuted**. The previous `npm run build` attempt failed at the unavailable Android ARM64 SWC binary before production compilation; it was not rerun for Stages 1–4, and no production build is claimed here. Unit/HTTP tests and schema text parity are not proof of live database authorization. Tests emitted nonfatal existing Node module-format and OpenSSL certificate-directory warnings.
+SQL runtime tests remain **unexecuted**. `npm run build` passed locally with Next.js 15.5.27 using the WASM SWC fallback after the native Android ARM64 SWC binary was unavailable. Unit/HTTP tests and schema text parity are not proof of live database authorization. Tests and the build emitted nonfatal existing Node module-format and OpenSSL certificate-directory warnings.
 
 SQL tests on a **disposable development database**:
 
