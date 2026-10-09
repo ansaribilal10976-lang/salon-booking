@@ -4,7 +4,7 @@
 
 The committed identity is **editorial plum/porcelain with lilac supporting surfaces**, using Bodoni Moda for display text and Geist Sans for reading and controls. It extends across the landing page, `/book`, and the `/admin` dashboard. Use generous space for discovery, a clear three-step booking form for guests, and a denser appointment list for staff. Do not add decorative card grids, fabricated metrics, reviews, or business claims.
 
-This document describes the implementation on `redesign-landing`: landing commit `b2b924b`, booking commit `b976f0a`, and dashboard commit `4c71879`. It supersedes the earlier olive/Cormorant specification; that revision remains in Git history, not as a second supported theme. **Muse remains a sample name**, and the typographic wordmark is not an approved salon logo.
+This document describes the implementation on `redesign-landing`: landing commit `b2b924b`, booking commit `b976f0a`, and dashboard commit `4c71879`. It supersedes the earlier olive specification; that revision remains in Git history, not as a second supported theme. **Muse remains a sample name**, and the typographic wordmark is not an approved salon logo.
 
 The redesign is presentation-only. Preserve booking state, validation, availability, submission and retry behavior, service mutations, query parameters, authentication, authorization, Supabase access, RLS, and API contracts. The shared admin shell is restyled; login and access-denied page contents, refresh, and sign-out components are not fully migrated to the new component markup.
 
@@ -68,7 +68,7 @@ The UI is light-only. `src/app/layout.tsx` sets `themeColor: "#f5f3f1"` to match
 
 Both brand families use `next/font/local` with `display: "swap"`; there is no runtime Google Fonts request. Font provenance is in `src/app/fonts/README.md`, with the Bodoni license in `src/app/fonts/BodoniModa-OFL.txt`.
 
-**Implementation distinction:** `src/app/layout.tsx` also registers the existing Geist Mono asset as `--font-geist-mono`, with `preload: false`, and Tailwind retains `font-mono`. It is not part of the two-family visual identity. The redesigned booking/admin reference fields inherit Geist Sans rather than using `font-mono`. The Cormorant asset remains in the repository but is not registered by the layout.
+**Implementation distinction:** `src/app/layout.tsx` also registers the existing Geist Mono asset as `--font-geist-mono`, with `preload: false`, and Tailwind retains `font-mono`. It is not part of the two-family visual identity. The redesigned booking/admin reference fields inherit Geist Sans rather than using `font-mono`.
 
 ### Type scale and rhythm
 
