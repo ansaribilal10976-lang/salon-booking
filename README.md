@@ -18,7 +18,7 @@ The server and browser helpers are in `src/lib/supabase/`. Both are typed using 
 
 ## Landing page
 
-The mobile-first home page uses an editorial plum/porcelain/lilac identity, locally served Bodoni Moda and Geist Sans, a clearly captioned stock photograph, service-menu rows, appointment-preparation advice, native booking-question disclosures, and **Book Now** links. The specification and launch requirements are in `DESIGN.md`.
+The mobile-first home page uses an editorial plum/porcelain/lilac identity, locally served Bodoni Moda and Geist Sans, a clearly captioned stock photograph, service-menu rows, appointment-preparation advice, native booking-question disclosures, and **Book Now** links. The same system now covers `/book` and the `/admin` dashboard. [DESIGN.md](DESIGN.md) documents the committed palette tokens, typography, spacing, component roles, page patterns, and launch requirements.
 
 - With no Supabase environment configuration, the home page displays a clearly labeled example menu. Rows say **Example only** instead of offering service-specific booking actions. These display-only services cannot be booked and are never inserted into the database.
 - With both variables configured, the page reads the public `services` table on each request, ordered by name. Requests time out after five seconds.
@@ -35,9 +35,11 @@ Replace or review every branding location before launch:
 - `src/lib/salon.ts` supplies the displayed name to the landing, booking, and admin wordmarks. The landing footer says “A sample salon concept.” The typographic name is provisional, not an approved logo.
 - `src/app/layout.tsx`, `src/app/book/page.tsx`, `src/app/admin/layout.tsx`: page titles/descriptions and name-derived metadata.
 - `src/app/page.tsx`, `src/app/book/page.tsx`, `src/components/booking-flow.tsx`: taglines, marketing/booking copy, image alt text, and salon-facing wording.
-- `src/components/icons.tsx`: existing decorative flower motif remains on booking/admin screens, but is not used on the redesigned landing page. There is no separate approved logo image.
+- `src/components/icons.tsx`: the legacy flower motif remains in `/admin/login`, not on the redesigned landing, booking, or dashboard surfaces. These use functional Lucide icons and the typographic wordmark; there is no separate approved logo image.
 - `src/app/favicon.ico`: starter black/white Vercel-style favicon; replace with the salon's own icon.
-- `tailwind.config.ts`, `src/app/globals.css`, `src/app/page.module.css`, `src/app/layout.tsx`, `src/app/fonts/`: palette, typography, shared component roles, and local fonts. Font provenance and license are in `src/app/fonts/README.md` and `BodoniModa-OFL.txt`. Also review the existing inline status colors in booking/admin components.
+- `src/app/globals.css`, `tailwind.config.ts`: shared palette, semantic color/font mappings, form styles, and compatibility classes. Booking/admin status and error colors use existing semantic tokens rather than inline hex colors.
+- `src/app/page.module.css`, `src/app/book/booking.module.css`, `src/app/admin/admin.module.css`: page-specific typography, spacing, and responsive layouts.
+- `src/app/layout.tsx`, `src/app/fonts/`: local font registration and assets. Bodoni provenance and license are in `src/app/fonts/README.md` and `src/app/fonts/BodoniModa-OFL.txt`. Geist Mono is still registered with preload disabled, but the redesigned reference fields use Geist Sans.
 - `src/lib/services.ts`: display-only example service names, durations, and prices; real menu rows come from Supabase `services`.
 - `public/images/salon-interior.jpg`, `public/images/README.md`, `src/app/page.tsx`: stock photo, attribution, and usage. The photo includes visible product signage, not proof of the salon's premises or affiliations.
 
@@ -47,19 +49,29 @@ There are **no service images or Supabase Storage calls**. The only photo is alr
 
 Use realistic, plain-English salon content, never lorem ipsum. Do not invent reviews, credentials, awards, contact details, or confirmed availability. Keep example-price disclosures whenever the menu is sample data.
 
-### Mobile-first UI
+## Shared design and responsive UI
 
-Layouts start with one column. Each service row stacks its name, duration, price, and action on mobile; at 1024px those details share one aligned row. The hero becomes split-column at 1024px. Mobile navigation remains visible, primary hero/closing CTAs fill the available width, and headings scale fluidly. Landing buttons are at least 48px high; navigation links are at least 44px high. Focus indicators, reduced-motion preferences, device safe areas, and browser zoom are supported. Contact inputs retain autocomplete and an appropriate phone keyboard. Long names and prices wrap.
+The committed system uses porcelain `--background: #F5F3F1`, paper `--paper: #FFFEFC`, plum `--ink: #382C38`, and lilac `--lilac: #E7DFEA`. Sage and danger tokens are reserved for semantic feedback. Primary actions are plum with porcelain text; summaries and supporting panels use lilac. Muted text and muted surfaces have separate roles. The full token/alias tables are in [DESIGN.md](DESIGN.md#palette-tokens).
 
-The landing remains server-rendered, and its FAQ uses native `<details>` elements. All landing booking/retry actions use the existing shadcn `Button` (CVA + Radix Slot); the empty/unavailable panel uses `Card`/`CardContent`. Both primitives are adapted to Tailwind 3. Pointer feedback uses the required `motion` package with lazy animation features, no layout/drag bundle, and reduced-motion support. Hover and keyboard states are immediate; no other animation/effect library is used. The unused direct `tw-animate-css` dependency was removed. Functional icons use `lucide-react`; fonts use `next/font/local`.
+Bodoni Moda 400 carries wordmarks, editorial headings, and prominent names; Geist Sans carries body text, labels, prices, inputs, and controls. Both use `next/font/local`. The layout also registers Geist Mono without preloading it, but it is not part of the two-family visual identity or used by the redesigned reference fields. Spacing is rem-based in the CSS modules, not a global `--space-*` token scale. The centered page frame is capped at 1360px, with 20/32/48/64px gutters at the base/640/1024/1280px breakpoints. Surfaces use 1px borders and small 6px radii, not decorative shadows or grain.
 
-Shared tokens keep booking/admin aliases compatible; muted text and muted surface roles are separate. Other dormant generated components under `src/components/ui/` still contain Tailwind 4-specific utilities and are not used by the landing. Their full migration and the legacy booking/admin control markup remain outside this landing redesign. No missing shadcn component was needed; future additions must use `npx shadcn@4.20.0 add <component>`.
+- **Landing:** service rows stack on mobile and align at 1024px; the hero also becomes split-column at 1024px. Navigation remains visible, the photo is explicitly labeled stock, and the FAQ uses native `<details>`.
+- **Booking:** native service/time radio choices, a bounded date input, contact fields, and a lilac appointment summary. The summary follows the form on mobile and becomes a sticky right-hand column at 1024px. Loading, error, empty, and receipt states share the same system.
+- **Admin:** a divided appointment list with a time column from 640px, text-labeled statuses, Today/Upcoming links, and existing pagination. The lilac service panel moves alongside the list at 1024px. Service editing and destructive confirmations stay inline rather than opening new modals.
 
-The latest verification must not start dev, preview, or build servers. The earlier dev-server run is recorded as a process violation in `DESIGN.md`. Use TypeScript, Node tests, and non-server CSS compilation for this task.
+Redesigned actions use the existing shadcn `Button` (CVA + Radix Slot); summaries, service panels, and empty/unavailable states use `Card`/`CardContent`. These primitives use Tailwind 3-compatible styling. Default buttons and inputs are at least 48px high; compact admin buttons and navigation links are at least 44px. Shared form classes retain labels, autocomplete, phone-keyboard modes, errors, and disabled states. Long names, references, and prices wrap. Focus indicators, reduced-motion rules, safe-area padding, and unrestricted browser zoom are implemented, but remain subject to hands-on accessibility/device verification.
 
-`tests/landing.test.mjs` renders the actual page and shadcn Button/Card with a mocked service catalog to cover live/preview/empty/unavailable states, service links, anchor targets, honest asset disclosures, escaped long names, contrast pairs, disabled/form semantics, and touch sizing. These checks do not replace browser layout, screen-reader, real-device, or live booking tests.
+Shared Button pointer feedback uses `motion` with lazy `domAnimation`: scale 0.98 over 120ms, disabled for reduced motion. Hover colors, keyboard activation, and FAQ disclosure are immediate. Functional icons use `lucide-react`. `tw-animate-css` remains installed but is not imported by the app styles or redesigned pages; it was not removed. Dormant Dialog/Sheet/Tabs/Badge/Sonner components are not part of these page implementations, and no full migration of the generated component library is claimed.
+
+The admin shell shares the new design, while login/access-denied contents and refresh/sign-out components retain compatible legacy markup. The UI redesign did not change booking logic, Supabase access, auth, RLS, or API routes. Use [the page patterns in DESIGN.md](DESIGN.md#page-patterns) when extending the UI rather than reintroducing the superseded olive direction.
+
+For redesign verification, run `npm run typecheck`, `npm test`, `npm run build`, and `git diff --check`. A production build compiles the app; do not start dev, preview, or production servers as part of this verification workflow. Do not create production appointments or touch live customer data.
+
+`tests/landing.test.mjs`, `tests/booking-ui.test.mjs`, and `tests/admin-ui.test.mjs` cover rendered page states and preserved controls, links, field associations, and feedback. Landing tests also cover selected theme contrast pairs and shared Button semantics/touch-size classes. The booking/admin render harness stubs Next transports, CSS modules, and data boundaries; supplied state fixtures do not execute browser events. These checks do not replace browser layout, screen-reader, real-device, or live booking/admin tests.
 
 ## Booking flow
+
+`/book` uses the shared plum/porcelain system with a three-step progress list: **Service → Date & time → Your details**. Service choices show duration and INR price; available times use three columns on mobile and four from 640px. Keep the existing preselected-service links, native controls, step focus, and appointment-summary behavior. See [the booking pattern](DESIGN.md#booking-book).
 
 1. Select a real salon service.
 2. Pick a date and one of the available appointment times.
@@ -67,7 +79,7 @@ The latest verification must not start dev, preview, or build servers. The earli
 4. Select **Confirm booking**.
 5. Show the success screen only after Supabase returns the matching saved reservation with `confirmed` status.
 
-The success screen shows the service, salon-local date and start/end times, time zone, reserved duration, menu price, customer name, phone, confirmed status, and booking reference. The menu price is not a charged payment or a historical price snapshot. Keep the confirmation/reference for your records; email and SMS notifications are not implemented.
+The success screen shows the service, salon-local date and start/end times, time zone, menu price, customer name, phone, confirmed status, and booking reference. The appointment summary before confirmation also shows the service duration. The menu price is not a charged payment or a historical price snapshot. Keep the confirmation/reference for your records; email and SMS notifications are not implemented.
 
 ### Scheduling rules
 
@@ -205,6 +217,8 @@ Guest booking still has no identity verification, customer cancellation UI, holi
 
 ## Admin dashboard
 
+The dashboard extends the same plum/porcelain identity with a paper header, an appointment list, and a lilac service-management panel. Text labels accompany every status color. The shared admin shell is restyled, while auth-page contents and behavior remain unchanged. See [the dashboard pattern](DESIGN.md#admin-dashboard-admin).
+
 Open `/admin`. Unauthenticated visitors go to `/admin/login`, which uses Supabase **email/password** sign-in. There is no public admin signup. Valid sessions are refreshed by middleware, and protected pages/API handlers independently verify `auth.getUser()` plus the database allowlist. A locally decoded session, an email address, or editable user metadata is not authorization.
 
 ### Provision an administrator
@@ -227,7 +241,7 @@ To revoke access, delete the user's row from `private.salon_admins` as the owner
 ### Dashboard behavior
 
 - **Today** includes every appointment starting on the current salon-local date, including elapsed appointments. **Upcoming** starts tomorrow. Views include all statuses and are ordered by start time and ID, with 50-row pagination.
-- Booking cards show customer name, phone, service, salon-local date/time, status, and reference.
+- Appointment rows show customer name, phone, service, salon-local start/end times and date, status, and reference. The time column is separate from the customer details on wider screens.
 - **Confirm** changes pending bookings to confirmed. **Cancel booking** requires an explicit confirmation and releases the occupied interval. Completed and cancelled bookings cannot be reopened. Repeating an already-applied confirm/cancel target is safe.
 - Service management supports **add, edit, and delete**, with real names, whole-minute durations from 1–600, and non-negative prices with at most two decimal places. Names are trimmed on database writes and stored names are limited to 120 characters. Database constraints enforce these limits before monetary-value rounding; the fifth migration deliberately normalizes existing outer name padding without changing prices, IDs, durations, or booking snapshots.
 - Service IDs cannot be changed. Deleting a service with any booking attached fails with a clear conflict message, preserving history. Duration edits affect new reservations while existing booking end-time snapshots stay unchanged.
@@ -252,9 +266,11 @@ npm run build
 
 Unit tests use Node's built-in runner and TypeScript stripping (Node 22.6+). They cover service source/error states, calendar/contact input validation, salon-zone formatting, availability response privacy, conflict handling, unknown write outcomes, safe receipt validation, idempotency request propagation, admin identity/role denial, API operation gating, service CRUD validation/read-back, booking status actions, pagination, and safe error responses. HTTP regressions execute the actual route/middleware source to check streaming UTF-8 byte limits, early cancellation (including failed/stalled cancellation), inclusive 4096-byte input, malformed JSON, and fail-closed responses for invalid Supabase URLs. Additional regressions cover friendly/sanitized quota 429s and UUID preservation, actual health-route authorization/configuration/timeout/no-store behavior, INR formatting, and SQL-runner safety with a fake `psql`. Database/auth adapters are mocked in these tests; they do not prove real authentication, database permissions, saves, or races.
 
-Latest local Stage 1–4 checks (rerun after removing the appointment-date quota, setting the global daily default to 40, and applying the phone-key/health-header fixes from `fix1.md`): `npm run typecheck` passed, **122 tests passed with zero failures/skips** under `npm test`, and `node scripts/export-supabase-schema.mjs --check` matched all six migration bodies and the fresh-project guard. `bash -n scripts/run-sql-tests.sh` and `git diff --check` also passed. Quota 429 regressions were first observed failing against the old error mapping, then passed with the new handling. SQL-runner tests used only a fake `psql`.
+**Committed redesign checks:** the implementation at `4c71879` passed `npm run typecheck`, **149 tests with zero failures/skips**, and `git diff --check`. `npm run build` passed for both the booking and dashboard redesigns and again at `4c71879`. The build skips linting; it is not a lint pass. Existing nonfatal warnings concern the OpenSSL certificate directory and Next.js's inferred workspace root; tests also emit a Node module-format warning. These results describe the committed UI implementation, not browser/device validation.
 
-SQL runtime tests remain **unexecuted**. `npm run build` passed locally with Next.js 15.5.27 using the WASM SWC fallback after the native Android ARM64 SWC binary was unavailable. Unit/HTTP tests and schema text parity are not proof of live database authorization. Tests and the build emitted nonfatal existing Node module-format and OpenSSL certificate-directory warnings.
+**Historical backend checks:** the Stage 1–4 pass after the quota/phone-key/health-header fixes passed typecheck and 122 tests. `node scripts/export-supabase-schema.mjs --check` matched all six migration bodies and the fresh-project guard; `bash -n scripts/run-sql-tests.sh` and `git diff --check` also passed. Quota 429 regressions failed against the old mapping and passed after the fix. The schema/shell results were not rerun as part of the UI redesign, and SQL-runner tests used only a fake `psql`.
+
+SQL runtime tests remain **unexecuted**. An earlier local build used the WASM SWC fallback after the native Android ARM64 binary was unavailable; later successful builds supersede the old “build blocked” report. Unit/HTTP/render tests and schema text parity are not proof of live database authorization.
 
 SQL tests on a **disposable development database**:
 
@@ -281,13 +297,13 @@ It runs ordinary `supabase/tests/*.sql` with `psql -X -w -v ON_ERROR_STOP=1`, st
 
 **The runner has not been used against a database; SQL migrations/tests have not been executed here.** No live/remote connection or credentials were used. Schema text parity and mocked application tests do not verify SQL syntax, permissions, saves, expiry, or races.
 
-The local Next.js production build is blocked by the unavailable Android ARM64 SWC binary. Browser rendering and interactions require verification on supported Linux/macOS/Windows or Vercel.
+The local production build now passes. Browser rendering and interactions still require separate hands-on verification; compilation does not establish visual correctness.
 
 ### Manual end-to-end checks
 
 After configuring a real key, applying all required migrations, and adding services on a supported runtime:
 
-1. At 320px, 375px, 768px, and 1280px widths, complete a booking from both the hero CTA and a preselected service card. Verify the summary and confirmed status, then check the saved row as the database owner.
+1. At 320px, 375px, 768px, and 1280px widths, complete a booking from both the hero CTA and a preselected service-menu row. Verify the summary and confirmed status, then check the saved row as the database owner.
 2. Reload the schedule and confirm the occupied interval is absent for every service, including starts inside a longer appointment.
 3. In two browsers, select the same time before either confirms. Confirm simultaneously; exactly one reservation must succeed. Repeat with different services/overlapping times and check adjacent appointments remain allowed.
 4. Test dates outside the horizon, past times, non-grid timestamps via the RPC, invalid contacts, an empty menu, offline availability, and a stale selection.
@@ -306,7 +322,7 @@ After applying all six migrations and provisioning an admin on a supported runti
 5. Revoke the admin membership while the dashboard is open. The next read/write must fail. Check direct Supabase calls as anon and an ordinary authenticated user, not just the UI.
 6. Sign out, then reload/back-navigate to the dashboard. Verify protected requests require sign-in. Check keyboard navigation, form validation, cancellation/delete prompts, and mobile layouts at 320px/375px widths.
 
-Browser/admin-auth and SQL checks have not been run here. Live end-to-end verification was not attempted; the local Android compiler limitation also blocks production/browser verification here. Local lint, TypeScript, unit tests, and Tailwind compilation are separate checks, not proof of live authentication or database authorization.
+Browser/admin-auth and SQL runtime checks have not been run for the committed redesign. Live end-to-end verification was not attempted. Passing production builds, TypeScript, and offline tests are separate evidence, not proof of browser rendering, live authentication, or database authorization; lint was skipped by the build.
 
 ## Health check and daily cron
 
