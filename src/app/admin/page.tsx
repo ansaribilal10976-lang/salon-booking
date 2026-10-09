@@ -36,32 +36,18 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     bookingError = appointments.error || !appointments.data ? "Bookings could not be loaded. Refresh the dashboard to try again." : null;
     serviceError = menu.error || !menu.data ? "The service menu could not be loaded. Refresh before making changes." : null;
     if (config) new Intl.DateTimeFormat("en-US", { timeZone: config.time_zone }).format();
-  } catch {
-    // Do not echo database or authentication error details into the dashboard.
-    return <AdminUnavailable message="The salon’s schedule could not be loaded. Please try again." />;
-  }
+  } catch { return <AdminUnavailable message="The salon’s schedule could not be loaded. Please try again." />; }
   if (accessLost) redirect("/admin/access-denied");
   if (!config) return <AdminUnavailable message="The salon’s booking configuration is unavailable. Please check the Supabase migrations and try again." />;
 
   return (
     <>
-      <div className="mb-10 flex flex-col justify-between gap-5 border-b border-line pb-7 sm:flex-row sm:items-end">
-        <div><p className="eyebrow">Your salon workspace</p><h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">A clear view of your day.</h1><p className="mt-4 text-sm leading-7 text-muted">Manage appointments and keep your service menu ready for the next guest.</p><p className="mt-2 text-xs text-muted [overflow-wrap:anywhere]">Signed in as {access.user.email ?? "salon administrator"}</p></div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap"><AdminRefresh /><AdminSignOut /></div>
-      </div>
-      <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
-        <AdminBookings bookings={bookings.slice(0, 50)} view={filters.view} page={filters.page} hasMore={bookings.length > 50} timeZone={config.time_zone} error={bookingError} />
-        <AdminServices services={services} error={serviceError} />
-      </div>
+      <div className="flex flex-col justify-between gap-7 border-b border-[var(--line)] pb-9 lg:flex-row lg:items-end"><div><p className="eyebrow">Good morning, studio team</p><h1 className="mt-4 max-w-3xl font-display text-5xl leading-[0.96] tracking-[-0.06em] sm:text-7xl">A clear view of <span className="italic text-[var(--clay)]">your day.</span></h1><p className="mt-5 max-w-xl text-sm leading-7 text-[var(--muted)]">Keep appointments moving and your service menu ready for the next guest.</p><p className="mt-3 text-xs text-[var(--muted)] [overflow-wrap:anywhere]">Signed in as <span className="font-medium text-[var(--ink)]">{access.user.email ?? "salon administrator"}</span></p></div><div className="flex flex-col gap-3 sm:flex-row"><AdminRefresh /><AdminSignOut /></div></div>
+      <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10"><AdminBookings bookings={bookings.slice(0, 50)} view={filters.view} page={filters.page} hasMore={bookings.length > 50} timeZone={config.time_zone} error={bookingError} /><AdminServices services={services} error={serviceError} /></div>
     </>
   );
 }
 
 function AdminUnavailable({ message }: { message: string }) {
-  return (
-    <section className="mx-auto max-w-xl rounded-2xl border border-line bg-white/60 p-7">
-      <h1 className="font-display text-3xl">The workspace is temporarily unavailable.</h1><p role="alert" className="mt-5 text-sm leading-7 text-muted">{message}</p>
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row"><AdminRefresh /><AdminSignOut /></div>
-    </section>
-  );
+  return <section className="admin-surface mx-auto max-w-xl p-7 sm:p-10"><p className="eyebrow">Studio workspace</p><h1 className="mt-3 font-display text-4xl">The workspace is temporarily unavailable.</h1><p role="alert" className="mt-5 text-sm leading-7 text-[var(--muted)]">{message}</p><div className="mt-7 flex flex-col gap-3 sm:flex-row"><AdminRefresh /><AdminSignOut /></div></section>;
 }

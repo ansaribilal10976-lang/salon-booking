@@ -11,11 +11,17 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        forest: "#263c32",
-        olive: "#586b4a",
-        muted: "#5d695f",
-        cream: "#f8f6f0",
-        line: "#dedfd4",
+        ink: "var(--ink)",
+        clay: "var(--clay)",
+        paper: "var(--paper)",
+        sand: "var(--sand)",
+        sage: "var(--sage)",
+        muted: "var(--muted)",
+        line: "var(--line)",
+        // Legacy aliases kept for any downstream customizations.
+        forest: "var(--ink)",
+        olive: "var(--sage)",
+        cream: "var(--cream)",
       },
       fontFamily: {
         display: ["Georgia", "Times New Roman", "serif"],
