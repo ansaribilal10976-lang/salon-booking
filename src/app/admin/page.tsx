@@ -3,6 +3,8 @@ import { AdminBookings } from "@/components/admin-bookings";
 import { AdminServices } from "@/components/admin-services";
 import { AdminSignOut } from "@/components/admin-sign-out";
 import { AdminRefresh } from "@/components/admin-refresh";
+import { Card, CardContent } from "@/components/ui/card";
+import admin from "./admin.module.css";
 import { getAdminAccess } from "@/lib/admin-server";
 import { parseAdminFilters } from "@/lib/admin-validation";
 import type { AdminBooking, BookingConfiguration, Service } from "@/types/database";
@@ -42,12 +44,38 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <div className="flex flex-col justify-between gap-7 border-b border-[var(--line)] pb-9 lg:flex-row lg:items-end"><div><p className="eyebrow">Good morning, studio team</p><h1 className="mt-4 max-w-3xl font-display text-5xl leading-[0.96] tracking-[-0.06em] sm:text-7xl">A clear view of <span className="italic text-[var(--clay)]">your day.</span></h1><p className="mt-5 max-w-xl text-sm leading-7 text-[var(--muted)]">Keep appointments moving and your service menu ready for the next guest.</p><p className="mt-3 text-xs text-[var(--muted)] [overflow-wrap:anywhere]">Signed in as <span className="font-medium text-[var(--ink)]">{access.user.email ?? "salon administrator"}</span></p></div><div className="flex flex-col gap-3 sm:flex-row"><AdminRefresh /><AdminSignOut /></div></div>
-      <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10"><AdminBookings bookings={bookings.slice(0, 50)} view={filters.view} page={filters.page} hasMore={bookings.length > 50} timeZone={config.time_zone} error={bookingError} /><AdminServices services={services} error={serviceError} /></div>
+      <div className={admin.intro}>
+        <div>
+          <p className={admin.label}>Appointments & services</p>
+          <h1 className={admin.title}>The salon, at a glance.</h1>
+          <p className={admin.description}>Keep appointments moving and your service menu ready for the next guest.</p>
+          <p className={admin.identity}>Signed in as <span>{access.user.email ?? "salon administrator"}</span></p>
+        </div>
+        <div className={admin.toolbar}><AdminRefresh /><AdminSignOut /></div>
+      </div>
+      <nav aria-label="Workspace sections" className={admin.jumpLinks}>
+        <a href="#admin-bookings-title">Appointment book</a>
+        <a href="#admin-services-title">Service menu</a>
+      </nav>
+      <div className={admin.layout}>
+        <AdminBookings bookings={bookings.slice(0, 50)} view={filters.view} page={filters.page} hasMore={bookings.length > 50} timeZone={config.time_zone} error={bookingError} />
+        <AdminServices services={services} error={serviceError} />
+      </div>
     </>
   );
 }
 
 function AdminUnavailable({ message }: { message: string }) {
-  return <section className="admin-surface mx-auto max-w-xl p-7 sm:p-10"><p className="eyebrow">Studio workspace</p><h1 className="mt-3 font-display text-4xl">The workspace is temporarily unavailable.</h1><p role="alert" className="mt-5 text-sm leading-7 text-[var(--muted)]">{message}</p><div className="mt-7 flex flex-col gap-3 sm:flex-row"><AdminRefresh /><AdminSignOut /></div></section>;
+  return (
+    <section className={admin.unavailable}>
+      <Card className={admin.unavailableCard}>
+        <CardContent>
+          <p className={admin.label}>Salon workspace</p>
+          <h1 className={admin.unavailableTitle}>The workspace is temporarily unavailable.</h1>
+          <p role="alert" className={admin.description}>{message}</p>
+          <div className={admin.toolbar}><AdminRefresh /><AdminSignOut /></div>
+        </CardContent>
+      </Card>
+    </section>
+  );
 }
