@@ -1,58 +1,78 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --ink: #f3ecdf;
-  --ink-soft: #d4c8b6;
-  --muted: #b0a28f;
-  --paper: #211c17;
-  --cream: #f8f0e1;
-  --sand: #191512;
-  --blush: #e2c27b;
-  --clay: #c7a35f;
-  --clay-dark: #e3c47d;
-  --sage: #b9c6a3;
-  --sage-soft: #263027;
-  --line: #493b2c;
-  --danger: #f09a87;
-  color-scheme: dark;
+@layer base {
+  :root {
+    /* Brand palette. Legacy aliases keep booking/admin presentation compatible. */
+    --background: #f5f3f1;
+    --paper: #fffefc;
+    --ink: #382c38;
+    --ink-soft: #584758;
+    --lilac: #e7dfea;
+    --text-muted: #6b5e6b;
+    --line: #d4cbd5;
+    --cream: var(--background);
+    --sand: #eee9ee;
+    --blush: var(--lilac);
+    --clay: var(--ink-soft);
+    --clay-dark: var(--ink);
+    --muted: var(--text-muted);
+    --sage: #3e6150;
+    --sage-soft: #e5ede7;
+    --danger: #963c42;
+    --danger-soft: #f9e8e7;
+
+    /* Semantic UI roles: muted surfaces must never reuse the text alias. */
+    --foreground: var(--ink);
+    --card: var(--paper);
+    --card-foreground: var(--ink);
+    --popover: var(--paper);
+    --popover-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: var(--cream);
+    --secondary: var(--lilac);
+    --secondary-foreground: var(--ink);
+    --muted-surface: var(--lilac);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--lilac);
+    --accent-foreground: var(--ink);
+    --destructive: var(--danger);
+    --border: var(--line);
+    --input: var(--text-muted);
+    --ring: var(--ink);
+    --radius: 0.375rem;
+    --font-sans: var(--font-geist-sans), Arial, sans-serif;
+    --font-display: var(--font-bodoni), Georgia, serif;
+    color-scheme: light;
+  }
+
+  html {
+    scrollbar-gutter: stable;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-width: 320px;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  ::selection { color: var(--cream); background: var(--ink); }
+  ::placeholder { color: var(--text-muted); opacity: 1; }
+  a, button, input, select, summary { touch-action: manipulation; }
+  a, button, summary { -webkit-tap-highlight-color: rgb(56 44 56 / 12%); }
+  button, summary { cursor: pointer; }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+    box-shadow: 0 0 0 5px var(--background);
+  }
+
+  h1, h2, h3 { text-wrap: balance; }
 }
-
-html {
-  scroll-behavior: smooth;
-  scrollbar-gutter: stable;
-}
-
-body {
-  min-width: 320px;
-  background:
-    radial-gradient(circle at 88% 0%, rgba(199, 163, 95, 0.16), transparent 28rem),
-    radial-gradient(circle at 5% 45%, rgba(75, 48, 27, 0.12), transparent 24rem),
-    var(--background);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-}
-
-::selection {
-  color: var(--background);
-  background: var(--clay);
-}
-
-::placeholder { color: #807361; }
-
-a, button, input, select { touch-action: manipulation; }
-a, button { -webkit-tap-highlight-color: rgba(199, 163, 95, 0.2); }
-button { cursor: pointer; }
-
-:focus-visible {
-  outline: 2px solid var(--clay-dark);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 5px var(--background);
-}
-
-h1, h2, h3 { text-wrap: balance; }
 
 @layer components {
   .page-width {
@@ -63,107 +83,59 @@ h1, h2, h3 { text-wrap: balance; }
   }
 
   @screen sm { .page-width { --page-gutter: 2rem; } }
-  @screen lg { .page-width { --page-gutter: 4rem; } }
-  @screen xl { .page-width { --page-gutter: 5rem; } }
+  @screen lg { .page-width { --page-gutter: 3rem; } }
+  @screen xl { .page-width { --page-gutter: 4rem; } }
 
-  .font-display { font-family: Georgia, "Times New Roman", serif; }
+  .font-display { font-family: var(--font-display); }
+  .eyebrow { @apply text-xs font-medium leading-5; color: var(--clay-dark); }
+  .section-heading { @apply font-display text-4xl leading-[1.1] tracking-[-0.04em] sm:text-6xl; color: var(--ink); }
+  .nav-link { @apply inline-flex min-h-11 items-center text-sm; color: var(--ink-soft); }
 
-  .eyebrow {
-    @apply text-[10px] font-semibold uppercase leading-5 tracking-[0.2em];
-    color: var(--clay-dark);
-  }
-
-  .section-heading {
-    @apply font-display text-4xl leading-[1.05] tracking-[-0.045em] sm:text-6xl;
-    color: var(--ink);
-  }
-
-  .nav-link {
-    @apply inline-flex min-h-11 items-center text-sm transition-colors duration-200;
-    color: var(--ink-soft);
-  }
-
-  .nav-link:hover { color: var(--clay-dark); }
-
+  /* Compatibility for untouched booking/admin markup; landing actions use shadcn Button. */
   .button {
-    @apply inline-flex min-h-12 max-w-full items-center justify-center gap-3 whitespace-normal rounded-full px-6 py-3 text-center text-sm font-medium leading-5 transition-all duration-200;
+    @apply inline-flex min-h-12 max-w-full items-center justify-center gap-3 whitespace-normal px-6 py-3 text-center text-sm font-medium leading-5;
+    border-radius: var(--radius);
+    user-select: none;
   }
 
-  .button:hover { transform: translateY(-1px); }
-  .button:active { transform: translateY(0); }
-  .button-primary { border: 1px solid var(--clay); background: var(--clay); color: var(--background); }
-  .button-primary:hover { border-color: var(--clay-dark); background: var(--clay-dark); }
-  .button-light { border: 1px solid var(--clay); background: var(--clay); color: var(--background); }
-  .button-light:hover { border-color: var(--clay-dark); background: var(--clay-dark); }
-  .button-terracotta { border: 1px solid var(--clay); background: var(--clay); color: var(--background); }
-  .button-terracotta:hover { border-color: var(--clay-dark); background: var(--clay-dark); }
-  .button-outline { border: 1px solid var(--line); background: transparent; color: var(--ink); }
-  .button-outline:hover { border-color: var(--clay); background: rgba(199, 163, 95, 0.1); }
+  .button-primary, .button-terracotta { border: 1px solid var(--ink); background: var(--ink); color: var(--cream); }
+  .button-light { border: 1px solid var(--cream); background: var(--cream); color: var(--ink); }
+  .button-outline { border: 1px solid var(--text-muted); background: transparent; color: var(--ink); }
   .button:disabled { cursor: not-allowed; opacity: 0.52; transform: none; }
 
   .booking-label { @apply block text-sm font-medium; color: var(--ink); }
   .booking-input {
-    @apply block min-h-12 min-w-0 w-full rounded-xl px-4 py-3 text-base transition-colors duration-200;
-    border: 1px solid var(--line);
+    @apply block min-h-12 min-w-0 w-full px-4 py-3 text-base;
+    border: 1px solid var(--input);
+    border-radius: var(--radius);
     background: var(--paper);
     color: var(--ink);
   }
-  .booking-input:focus { border-color: var(--clay); outline: none; box-shadow: 0 0 0 3px rgba(199, 163, 95, 0.18); }
+  .booking-input:focus { border-color: var(--ink); outline: 2px solid var(--ink); outline-offset: 2px; }
   .booking-input[aria-invalid="true"] { border-color: var(--danger); }
   .booking-choice {
-    @apply block rounded-xl transition-all duration-200;
-    border: 1px solid var(--line);
-    background: rgba(33, 28, 23, 0.82);
+    @apply block;
+    border: 1px solid var(--input);
+    border-radius: var(--radius);
+    background: var(--paper);
     color: var(--ink);
   }
-  .booking-choice:hover { border-color: var(--clay); background: #2a231c; }
-  .booking-alert { @apply rounded-xl px-4 py-3 text-sm leading-7; border: 1px solid #744537; background: #351f1a; color: #ffd7ca; }
+  .booking-alert { @apply px-4 py-3 text-sm leading-7; border: 1px solid var(--danger); border-radius: var(--radius); background: var(--danger-soft); color: var(--danger); }
   .field-error { @apply mt-2 text-sm leading-6; color: var(--danger); }
+  .dark-panel { background: var(--ink); color: var(--cream); }
+  .admin-surface { border: 1px solid var(--line); background: var(--paper); }
 
-  .service-card {
-    @apply relative flex min-w-0 flex-col overflow-hidden rounded-[1.35rem] transition-all duration-300;
-    border: 1px solid var(--line);
-    background: rgba(33, 28, 23, 0.76);
-  }
-  .service-card:hover { border-color: var(--clay); box-shadow: 0 18px 40px -26px rgba(0, 0, 0, 0.75); transform: translateY(-3px); }
-
-  .marquee-strip {
-    border-top: 1px solid var(--clay);
-    border-bottom: 1px solid var(--clay);
-    background: var(--clay);
-    color: var(--background);
-  }
-
-  .soft-panel { border: 1px solid var(--line); background: rgba(33, 28, 23, 0.78); }
-  .dark-panel { background: #0b0908; color: var(--cream); }
-  .clay-panel { background: linear-gradient(135deg, #a07835 0%, #67491f 100%); color: var(--cream); }
-  .sage-panel { border: 1px solid #3c493b; background: var(--sage-soft); }
-
-  .admin-surface {
-    border: 1px solid var(--line);
-    background: rgba(33, 28, 23, 0.82);
-    box-shadow: 0 15px 42px -32px rgba(0, 0, 0, 0.9);
+  @media (hover: hover) and (pointer: fine) {
+    .nav-link:hover { color: var(--ink); }
+    .button-primary:hover, .button-terracotta:hover { border-color: var(--ink-soft); background: var(--ink-soft); }
+    .button-light:hover { border-color: var(--lilac); background: var(--lilac); }
+    .button-outline:hover { border-color: var(--ink); background: var(--lilac); }
+    .booking-choice:hover { border-color: var(--ink); background: var(--sand); }
   }
 }
 
-.site-header {
-  --header-padding: 1rem;
-  padding-top: max(var(--header-padding), env(safe-area-inset-top, 0px));
-}
-
+.site-header { padding-top: max(1rem, env(safe-area-inset-top, 0px)); }
 .site-footer { padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)); }
-
-.hero-title { font-size: clamp(3.4rem, 8vw, 8.6rem); }
-.hero-photo { border-radius: 1.35rem; }
-
-.hero-orbit {
-  position: absolute;
-  border: 1px solid rgba(226, 194, 123, 0.65);
-  border-radius: 9999px;
-  pointer-events: none;
-}
-
-.editorial-rule { border-top: 1px solid var(--line); }
 
 .skip-link {
   position: fixed;
@@ -171,105 +143,18 @@ h1, h2, h3 { text-wrap: balance; }
   left: 0.75rem;
   z-index: 50;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  color: var(--background);
-  background: var(--clay);
+  border-radius: var(--radius);
+  color: var(--cream);
+  background: var(--ink);
   transform: translateY(-200%);
 }
 .skip-link:focus { transform: translateY(0); }
 
-@media (min-width: 640px) {
-  .site-header { --header-padding: 1.25rem; }
-  .hero-photo { border-radius: 48% 48% 1rem 1rem; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
     animation-duration: 0.01ms !important;
-  }
-}
-
-@layer base {
-  .theme {
-    --font-heading: var(--font-sans);
-    --font-sans: var(--font-sans);
-  }
-  :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-  }
-  .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
-  }
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
+    animation-iteration-count: 1 !important;
   }
 }

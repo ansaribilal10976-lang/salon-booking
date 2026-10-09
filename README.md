@@ -18,12 +18,12 @@ The server and browser helpers are in `src/lib/supabase/`. Both are typed using 
 
 ## Landing page
 
-The mobile-first home page includes a hero, salon service cards showing duration and price, practical appointment-preparation advice, and **Book Now** links.
+The mobile-first home page uses an editorial plum/porcelain/lilac identity, locally served Bodoni Moda and Geist Sans, a clearly captioned stock photograph, service-menu rows, appointment-preparation advice, native booking-question disclosures, and **Book Now** links. The specification and launch requirements are in `DESIGN.md`.
 
-- With no Supabase environment configuration, the home page displays a clearly labeled example menu. These display-only services cannot be booked and are never inserted into the database.
+- With no Supabase environment configuration, the home page displays a clearly labeled example menu. Rows say **Example only** instead of offering service-specific booking actions. These display-only services cannot be booked and are never inserted into the database.
 - With both variables configured, the page reads the public `services` table on each request, ordered by name. Requests time out after five seconds.
 - An empty live menu and a failed connection show different states. Neither silently falls back to invented services.
-- **Book Now** opens `/book`. A real service card preselects that service. Booking requires a reachable, migrated Supabase project and real service rows; there is no fake success or local-only reservation fallback.
+- **Book Now** opens `/book`. A real service row preselects that service. Booking requires a reachable, migrated Supabase project and real service rows; there is no fake success or local-only reservation fallback.
 
 Brand and display currency are configured in `src/lib/salon.ts`. **Muse is a placeholder salon name**, not a real-business claim. Prices display in **INR using `en-IN`**, including Indian digit grouping (for example, ₹1,23,456.78). This changes formatting only: it does not convert stored numeric prices or choose the salon time zone. Review the service amounts as rupees before launch.
 
@@ -32,12 +32,12 @@ Brand and display currency are configured in `src/lib/salon.ts`. **Muse is a pla
 Replace or review every branding location before launch:
 
 - `src/lib/salon.ts`: placeholder name, display locale, and currency.
-- `src/app/page.tsx`, `src/app/book/page.tsx`, `src/app/admin/layout.tsx`: hardcoded lowercase **`muse.`** wordmark. The landing footer says “A sample salon concept.”
+- `src/lib/salon.ts` supplies the displayed name to the landing, booking, and admin wordmarks. The landing footer says “A sample salon concept.” The typographic name is provisional, not an approved logo.
 - `src/app/layout.tsx`, `src/app/book/page.tsx`, `src/app/admin/layout.tsx`: page titles/descriptions and name-derived metadata.
 - `src/app/page.tsx`, `src/app/book/page.tsx`, `src/components/booking-flow.tsx`: taglines, marketing/booking copy, image alt text, and salon-facing wording.
-- `src/components/icons.tsx`: `FlowerIcon` brand/decorative motif and other inline iconography; there is no separate logo image.
+- `src/components/icons.tsx`: existing decorative flower motif remains on booking/admin screens, but is not used on the redesigned landing page. There is no separate approved logo image.
 - `src/app/favicon.ico`: starter black/white Vercel-style favicon; replace with the salon's own icon.
-- `tailwind.config.ts`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/fonts/`: palette, typography, and local Geist fonts. Also review inline colors in the landing page, booking flow, and admin booking/service components.
+- `tailwind.config.ts`, `src/app/globals.css`, `src/app/page.module.css`, `src/app/layout.tsx`, `src/app/fonts/`: palette, typography, shared component roles, and local fonts. Font provenance and license are in `src/app/fonts/README.md` and `BodoniModa-OFL.txt`. Also review the existing inline status colors in booking/admin components.
 - `src/lib/services.ts`: display-only example service names, durations, and prices; real menu rows come from Supabase `services`.
 - `public/images/salon-interior.jpg`, `public/images/README.md`, `src/app/page.tsx`: stock photo, attribution, and usage. The photo includes visible product signage, not proof of the salon's premises or affiliations.
 
@@ -49,7 +49,15 @@ Use realistic, plain-English salon content, never lorem ipsum. Do not invent rev
 
 ### Mobile-first UI
 
-Layouts start with one column. Services expand to two columns at 640px and three at 1024px. The hero becomes split-column at 1024px. Mobile navigation remains visible, primary CTAs fill the available width, and headings scale fluidly. Buttons are at least 48px high; navigation links are at least 44px high. Focus indicators, reduced-motion preferences, device safe areas, and browser zoom are supported. Contact inputs use autocomplete and an appropriate phone keyboard. Long names and prices wrap.
+Layouts start with one column. Each service row stacks its name, duration, price, and action on mobile; at 1024px those details share one aligned row. The hero becomes split-column at 1024px. Mobile navigation remains visible, primary hero/closing CTAs fill the available width, and headings scale fluidly. Landing buttons are at least 48px high; navigation links are at least 44px high. Focus indicators, reduced-motion preferences, device safe areas, and browser zoom are supported. Contact inputs retain autocomplete and an appropriate phone keyboard. Long names and prices wrap.
+
+The landing remains server-rendered, and its FAQ uses native `<details>` elements. All landing booking/retry actions use the existing shadcn `Button` (CVA + Radix Slot); the empty/unavailable panel uses `Card`/`CardContent`. Both primitives are adapted to Tailwind 3. Pointer feedback uses the required `motion` package with lazy animation features, no layout/drag bundle, and reduced-motion support. Hover and keyboard states are immediate; no other animation/effect library is used. The unused direct `tw-animate-css` dependency was removed. Functional icons use `lucide-react`; fonts use `next/font/local`.
+
+Shared tokens keep booking/admin aliases compatible; muted text and muted surface roles are separate. Other dormant generated components under `src/components/ui/` still contain Tailwind 4-specific utilities and are not used by the landing. Their full migration and the legacy booking/admin control markup remain outside this landing redesign. No missing shadcn component was needed; future additions must use `npx shadcn@4.20.0 add <component>`.
+
+The latest verification must not start dev, preview, or build servers. The earlier dev-server run is recorded as a process violation in `DESIGN.md`. Use TypeScript, Node tests, and non-server CSS compilation for this task.
+
+`tests/landing.test.mjs` renders the actual page and shadcn Button/Card with a mocked service catalog to cover live/preview/empty/unavailable states, service links, anchor targets, honest asset disclosures, escaped long names, contrast pairs, disabled/form semantics, and touch sizing. These checks do not replace browser layout, screen-reader, real-device, or live booking tests.
 
 ## Booking flow
 

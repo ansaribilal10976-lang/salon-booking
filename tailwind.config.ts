@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  future: { hoverOnlyWhenSupported: true },
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,12 +12,21 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        primary: { DEFAULT: "var(--primary)", foreground: "var(--primary-foreground)" },
+        secondary: { DEFAULT: "var(--secondary)", foreground: "var(--secondary-foreground)" },
+        card: { DEFAULT: "var(--card)", foreground: "var(--card-foreground)" },
+        popover: { DEFAULT: "var(--popover)", foreground: "var(--popover-foreground)" },
+        accent: { DEFAULT: "var(--accent)", foreground: "var(--accent-foreground)" },
+        destructive: "var(--destructive)",
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
         ink: "var(--ink)",
         clay: "var(--clay)",
         paper: "var(--paper)",
         sand: "var(--sand)",
         sage: "var(--sage)",
-        muted: "var(--muted)",
+        muted: { DEFAULT: "var(--muted-surface)", foreground: "var(--muted-foreground)" },
         line: "var(--line)",
         // Legacy aliases kept for any downstream customizations.
         forest: "var(--ink)",
@@ -24,7 +34,10 @@ const config: Config = {
         cream: "var(--cream)",
       },
       fontFamily: {
-        display: ["Georgia", "Times New Roman", "serif"],
+        sans: ["var(--font-geist-sans)", "Arial", "sans-serif"],
+        display: ["var(--font-bodoni)", "Georgia", "serif"],
+        heading: ["var(--font-geist-sans)", "Arial", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
       },
     },
   },
