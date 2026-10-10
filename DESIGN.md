@@ -137,7 +137,7 @@ The redesigned pages do not use decorative elevation shadows or grain textures. 
 
 The redesigned controls use the existing shadcn Button/Card APIs, adapted to **Tailwind 3**. Default buttons and inputs are at least 48px high; compact admin buttons and navigation links are at least 44px. Disabled controls retain their native disabled semantics. Input labels, autocomplete, keyboard types, inline errors, and focus refs remain intact.
 
-Compatibility classes such as `.button`, `.admin-surface`, and the old color aliases remain for refresh/sign-out and untouched auth-page contents. The legacy flower icon remains on the login page, not on `/`, `/book`, or the dashboard. Dialog, Sheet, Tabs, Badge, and Sonner are not used by these redesigned pages; dormant generated primitives are not evidence of a full Tailwind migration. Reuse the existing primitives, and review compatibility before introducing another one.
+Compatibility classes such as `.button`, `.admin-surface`, and the old color aliases remain for refresh/sign-out and untouched auth-page contents. The legacy flower icon remains on the login page, not on `/`, `/book`, or the dashboard. Dialog, Sheet, Tabs, and Badge are not used by these redesigned pages; dormant generated primitives are not evidence of a full Tailwind migration. Sonner was removed because it had no consumers. Reuse the existing primitives, and review compatibility before introducing another one.
 
 ## Page patterns
 
@@ -187,7 +187,7 @@ The only animation used by the redesigned pages is shared Button pointer-press f
 
 Page hover styles are gated by pointer/hover capability; Tailwind has `future.hoverOnlyWhenSupported: true`. Global reduced-motion rules disable transitions and minimize CSS animations. Touch controls use `touch-action: manipulation`. Skip links, native form semantics, focus indicators, wrapping, and safe-area padding are implemented; browser, assistive-technology, and hardware behavior still require hands-on checks. Booking radio selections also have explicit forced-colors styling.
 
-`tw-animate-css` remains a direct dependency in `package.json`, but it is not imported by the current app styles or redesigned pages. Do not describe it as removed, or treat its presence as implemented animation. No dependency cleanup is part of this specification.
+`tw-animate-css`, `next-themes`, and `sonner` are not dependencies of the current app. The unused Sonner wrapper was removed with those packages; Button motion continues to use the direct `motion` package. No other dependency cleanup is implied by this specification.
 
 ## Content and launch requirements
 
