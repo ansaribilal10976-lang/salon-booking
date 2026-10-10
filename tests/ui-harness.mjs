@@ -29,9 +29,9 @@ export const link = {
   __esModule: true,
   default: ({ href, children, ...props }) => React.createElement("a", { ...props, href }, children),
 };
-const require = createRequire(import.meta.url);
-export const button = loadSource("../src/components/ui/button.tsx", { "@/lib/utils": require("cn") });
-export const card = loadSource("../src/components/ui/card.tsx");
+const utils = loadSource("../src/lib/utils.ts");
+export const button = loadSource("../src/components/ui/button.tsx", { "@/lib/utils": utils });
+export const card = loadSource("../src/components/ui/card.tsx", { "@/lib/utils": utils });
 
 // Read state variable names instead of depending on useState call indexes.
 export function withStateFixtures(path, fixtures) {

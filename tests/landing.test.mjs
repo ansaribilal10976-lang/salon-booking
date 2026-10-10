@@ -28,11 +28,10 @@ function loadSource(path, overrides = {}) {
   return module.exports;
 }
 
-const require = createRequire(import.meta.url);
 const { Button, buttonVariants } = loadSource("../src/components/ui/button.tsx", {
-  "@/lib/utils": require("cn"),
+  "@/lib/utils": loadSource("../src/lib/utils.ts"),
 });
-const card = loadSource("../src/components/ui/card.tsx");
+const card = loadSource("../src/components/ui/card.tsx", { "@/lib/utils": loadSource("../src/lib/utils.ts") });
 const { BookingButton } = loadSource("../src/components/booking-button.tsx", {
   "@/components/ui/button": { Button },
   "next/link": {
