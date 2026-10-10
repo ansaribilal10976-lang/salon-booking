@@ -3,11 +3,13 @@ import { AdminBookings } from "@/components/admin-bookings";
 import { AdminServices } from "@/components/admin-services";
 import { AdminSignOut } from "@/components/admin-sign-out";
 import { AdminRefresh } from "@/components/admin-refresh";
+import { Card, CardContent } from "@/components/ui/card";
+import admin from "./admin.module.css";
 import { getAdminAccess } from "@/lib/admin-server";
 import { parseAdminFilters } from "@/lib/admin-validation";
 import type { AdminBooking, BookingConfiguration, Service } from "@/types/database";
 
-export default async function AdminPage({ searchParams }: { searchParams: { view?: string | string[]; page?: string | string[] } }) {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; page?: string | string[] }> }) {
   const { supabase, access } = await getAdminAccess();
   if (!access.allowed) {
     if (access.status === 401) redirect("/admin/login");
@@ -15,7 +17,8 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
     return <AdminUnavailable message={access.error} />;
   }
   if (!supabase) return <AdminUnavailable message="The admin workspace is unavailable right now." />;
-  const filters = parseAdminFilters(searchParams.view, searchParams.page);
+  const resolvedSearchParams = await searchParams;
+  const filters = parseAdminFilters(resolvedSearchParams.view, resolvedSearchParams.page);
   let config: BookingConfiguration | undefined;
   let bookings: AdminBooking[] = [];
   let services: Service[] = [];
@@ -35,20 +38,26 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
     bookingError = appointments.error || !appointments.data ? "Bookings could not be loaded. Refresh the dashboard to try again." : null;
     serviceError = menu.error || !menu.data ? "The service menu could not be loaded. Refresh before making changes." : null;
     if (config) new Intl.DateTimeFormat("en-US", { timeZone: config.time_zone }).format();
-  } catch {
-    // Do not echo database or authentication error details into the dashboard.
-    return <AdminUnavailable message="The salon’s schedule could not be loaded. Please try again." />;
-  }
+  } catch { return <AdminUnavailable message="The salon’s schedule could not be loaded. Please try again." />; }
   if (accessLost) redirect("/admin/access-denied");
   if (!config) return <AdminUnavailable message="The salon’s booking configuration is unavailable. Please check the Supabase migrations and try again." />;
 
   return (
     <>
-      <div className="mb-10 flex flex-col justify-between gap-5 border-b border-line pb-7 sm:flex-row sm:items-end">
-        <div><p className="eyebrow">Your salon workspace</p><h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">A clear view of your day.</h1><p className="mt-4 text-sm leading-7 text-muted">Manage appointments and keep your service menu ready for the next guest.</p><p className="mt-2 text-xs text-muted [overflow-wrap:anywhere]">Signed in as {access.user.email ?? "salon administrator"}</p></div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap"><AdminRefresh /><AdminSignOut /></div>
+      <div className={admin.intro}>
+        <div>
+          <p className={admin.label}>Appointments & services</p>
+          <h1 className={admin.title}>The salon, at a glance.</h1>
+          <p className={admin.description}>Keep appointments moving and your service menu ready for the next guest.</p>
+          <p className={admin.identity}>Signed in as <span>{access.user.email ?? "salon administrator"}</span></p>
+        </div>
+        <div className={admin.toolbar}><AdminRefresh /><AdminSignOut /></div>
       </div>
-      <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
+      <nav aria-label="Workspace sections" className={admin.jumpLinks}>
+        <a href="#admin-bookings-title">Appointment book</a>
+        <a href="#admin-services-title">Service menu</a>
+      </nav>
+      <div className={admin.layout}>
         <AdminBookings bookings={bookings.slice(0, 50)} view={filters.view} page={filters.page} hasMore={bookings.length > 50} timeZone={config.time_zone} error={bookingError} />
         <AdminServices services={services} error={serviceError} />
       </div>
@@ -58,9 +67,15 @@ export default async function AdminPage({ searchParams }: { searchParams: { view
 
 function AdminUnavailable({ message }: { message: string }) {
   return (
-    <section className="mx-auto max-w-xl rounded-2xl border border-line bg-white/60 p-7">
-      <h1 className="font-display text-3xl">The workspace is temporarily unavailable.</h1><p role="alert" className="mt-5 text-sm leading-7 text-muted">{message}</p>
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row"><AdminRefresh /><AdminSignOut /></div>
+    <section className={admin.unavailable}>
+      <Card className={admin.unavailableCard}>
+        <CardContent>
+          <p className={admin.label}>Salon workspace</p>
+          <h1 className={admin.unavailableTitle}>The workspace is temporarily unavailable.</h1>
+          <p role="alert" className={admin.description}>{message}</p>
+          <div className={admin.toolbar}><AdminRefresh /><AdminSignOut /></div>
+        </CardContent>
+      </Card>
     </section>
   );
 }

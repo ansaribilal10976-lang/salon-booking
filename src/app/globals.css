@@ -2,166 +2,140 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #f8f6f0;
-  --foreground: #263c32;
-  color-scheme: light;
-}
+@layer base {
+  :root {
+    /* Brand palette. Legacy aliases keep booking/admin presentation compatible. */
+    --background: #f5f3f1;
+    --paper: #fffefc;
+    --ink: #382c38;
+    --ink-soft: #584758;
+    --lilac: #e7dfea;
+    --text-muted: #6b5e6b;
+    --line: #d4cbd5;
+    --cream: var(--background);
+    --sand: #eee9ee;
+    --blush: var(--lilac);
+    --clay: var(--ink-soft);
+    --clay-dark: var(--ink);
+    --muted: var(--text-muted);
+    --sage: #3e6150;
+    --sage-soft: #e5ede7;
+    --danger: #963c42;
+    --danger-soft: #f9e8e7;
 
-html {
-  scroll-behavior: smooth;
-  scrollbar-gutter: stable;
-}
+    /* Semantic UI roles: muted surfaces must never reuse the text alias. */
+    --foreground: var(--ink);
+    --card: var(--paper);
+    --card-foreground: var(--ink);
+    --popover: var(--paper);
+    --popover-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: var(--cream);
+    --secondary: var(--lilac);
+    --secondary-foreground: var(--ink);
+    --muted-surface: var(--lilac);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--lilac);
+    --accent-foreground: var(--ink);
+    --destructive: var(--danger);
+    --border: var(--line);
+    --input: var(--text-muted);
+    --ring: var(--ink);
+    --radius: 0.375rem;
+    --font-sans: var(--font-geist-sans), Arial, sans-serif;
+    --font-display: var(--font-bodoni), Georgia, serif;
+    color-scheme: light;
+  }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-}
+  html {
+    scrollbar-gutter: stable;
+    -webkit-text-size-adjust: 100%;
+  }
 
-::selection {
-  color: #263c32;
-  background: #d9dfb7;
-}
+  body {
+    min-width: 320px;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
 
-:focus-visible {
-  outline: 2px solid #263c32;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 5px #f8f6f0;
-}
+  ::selection { color: var(--cream); background: var(--ink); }
+  ::placeholder { color: var(--text-muted); opacity: 1; }
+  a, button, input, select, summary { touch-action: manipulation; }
+  a, button, summary { -webkit-tap-highlight-color: rgb(56 44 56 / 12%); }
+  button, summary { cursor: pointer; }
 
-a, button {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: #586b4a26;
-}
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+    box-shadow: 0 0 0 5px var(--background);
+  }
 
-h1, h2 {
-  text-wrap: balance;
+  h1, h2, h3 { text-wrap: balance; }
 }
 
 @layer components {
   .page-width {
-    @apply mx-auto w-full max-w-[1280px];
+    @apply mx-auto w-full max-w-[1360px];
     --page-gutter: 1.25rem;
     padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
     padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
   }
 
-  @screen sm {
-    .page-width {
-      --page-gutter: 2rem;
-    }
-  }
+  @screen sm { .page-width { --page-gutter: 2rem; } }
+  @screen lg { .page-width { --page-gutter: 3rem; } }
+  @screen xl { .page-width { --page-gutter: 4rem; } }
 
-  @screen lg {
-    .page-width {
-      --page-gutter: 3.5rem;
-    }
-  }
+  .font-display { font-family: var(--font-display); }
+  .eyebrow { @apply text-xs font-medium leading-5; color: var(--clay-dark); }
+  .section-heading { @apply font-display text-4xl leading-[1.1] tracking-[-0.04em] sm:text-6xl; color: var(--ink); }
+  .nav-link { @apply inline-flex min-h-11 items-center text-sm; color: var(--ink-soft); }
 
-  .eyebrow {
-    @apply text-[11px] font-medium uppercase leading-5 tracking-[0.16em] text-olive;
-  }
-
-  .section-heading {
-    @apply font-display text-4xl leading-[1.15] tracking-[-0.045em] text-forest sm:text-5xl;
-  }
-
-  .nav-link {
-    @apply inline-flex min-h-11 items-center text-muted transition-colors hover:text-forest hover:underline hover:underline-offset-4;
-  }
-
+  /* Compatibility for untouched booking/admin markup; landing actions use shadcn Button. */
   .button {
-    @apply inline-flex min-h-12 max-w-full items-center justify-center gap-4 whitespace-normal rounded-full py-3 text-center text-sm font-medium leading-5 transition-colors;
+    @apply inline-flex min-h-12 max-w-full items-center justify-center gap-3 whitespace-normal px-6 py-3 text-center text-sm font-medium leading-5;
+    border-radius: var(--radius);
+    user-select: none;
   }
 
-  .button-primary {
-    @apply border border-forest bg-forest px-6 text-cream hover:border-[#3a5344] hover:bg-[#3a5344];
-  }
+  .button-primary, .button-terracotta { border: 1px solid var(--ink); background: var(--ink); color: var(--cream); }
+  .button-light { border: 1px solid var(--cream); background: var(--cream); color: var(--ink); }
+  .button-outline { border: 1px solid var(--text-muted); background: transparent; color: var(--ink); }
+  .button:disabled { cursor: not-allowed; opacity: 0.52; transform: none; }
 
-  .button-small {
-    @apply gap-2 px-4 sm:gap-3 sm:px-5;
-  }
-
-  .button-light {
-    @apply border border-cream bg-cream px-7 text-forest hover:border-[#d9dfb7] hover:bg-[#d9dfb7];
-  }
-
-  .button-service {
-    @apply justify-between rounded-md px-2 text-forest hover:bg-forest/[0.05];
-  }
-
-  .service-card {
-    @apply bg-white/40 transition-[border-color,box-shadow] duration-300 hover:border-olive/60 hover:shadow-[0_8px_30px_-20px_rgba(38,60,50,0.3)];
-  }
-
-  .service-card:nth-child(3n + 1) {
-    @apply bg-[#eef0e8];
-  }
-
-  .button-outline {
-    @apply border border-line bg-transparent px-5 text-forest hover:border-olive hover:bg-[#eef0e8];
-  }
-
-  .button:disabled {
-    @apply cursor-not-allowed opacity-50;
-  }
-
-  .booking-label {
-    @apply block text-sm font-medium text-forest;
-  }
-
+  .booking-label { @apply block text-sm font-medium; color: var(--ink); }
   .booking-input {
-    @apply block min-h-12 min-w-0 w-full rounded-xl border border-line bg-white px-4 py-3 text-base text-forest transition-colors focus:border-olive disabled:opacity-60;
+    @apply block min-h-12 min-w-0 w-full px-4 py-3 text-base;
+    border: 1px solid var(--input);
+    border-radius: var(--radius);
+    background: var(--paper);
+    color: var(--ink);
   }
-
-  .booking-input[aria-invalid="true"] {
-    @apply border-[#a33927];
-  }
-
+  .booking-input:focus { border-color: var(--ink); outline: 2px solid var(--ink); outline-offset: 2px; }
+  .booking-input[aria-invalid="true"] { border-color: var(--danger); }
   .booking-choice {
-    @apply block rounded-xl border border-line bg-white/60 text-forest transition-colors hover:border-olive;
+    @apply block;
+    border: 1px solid var(--input);
+    border-radius: var(--radius);
+    background: var(--paper);
+    color: var(--ink);
   }
+  .booking-alert { @apply px-4 py-3 text-sm leading-7; border: 1px solid var(--danger); border-radius: var(--radius); background: var(--danger-soft); color: var(--danger); }
+  .field-error { @apply mt-2 text-sm leading-6; color: var(--danger); }
+  .dark-panel { background: var(--ink); color: var(--cream); }
+  .admin-surface { border: 1px solid var(--line); background: var(--paper); }
 
-  .booking-alert {
-    @apply rounded-xl border border-[#e4cabb] bg-[#fff3eb] px-4 py-3 text-sm leading-7 text-[#753c2b];
-  }
-
-  .field-error {
-    @apply mt-2 text-sm leading-6 text-[#a33927];
-  }
-}
-
-.site-header {
-  --header-padding: 1rem;
-  padding-top: max(var(--header-padding), env(safe-area-inset-top, 0px));
-}
-
-.hero-title {
-  font-size: clamp(2.75rem, calc(1.75rem + 5vw), 6.5rem);
-}
-
-.hero-photo {
-  border-radius: 1.25rem;
-}
-
-@media (min-width: 640px) {
-  .site-header {
-    --header-padding: 1.25rem;
-  }
-
-  .hero-photo {
-    border-radius: 48% 48% 1rem 1rem;
+  @media (hover: hover) and (pointer: fine) {
+    .nav-link:hover { color: var(--ink); }
+    .button-primary:hover, .button-terracotta:hover { border-color: var(--ink-soft); background: var(--ink-soft); }
+    .button-light:hover { border-color: var(--lilac); background: var(--lilac); }
+    .button-outline:hover { border-color: var(--ink); background: var(--lilac); }
+    .booking-choice:hover { border-color: var(--ink); background: var(--sand); }
   }
 }
 
-.site-footer {
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
-}
-
-.booking-input::-webkit-date-and-time-value {
-  text-align: left;
-}
+.site-header { padding-top: max(1rem, env(safe-area-inset-top, 0px)); }
+.site-footer { padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)); }
 
 .skip-link {
   position: fixed;
@@ -169,23 +143,18 @@ h1, h2 {
   left: 0.75rem;
   z-index: 50;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  color: #f8f6f0;
-  background: #263c32;
+  border-radius: var(--radius);
+  color: var(--cream);
+  background: var(--ink);
   transform: translateY(-200%);
 }
-
-.skip-link:focus {
-  transform: translateY(0);
-}
+.skip-link:focus { transform: translateY(0); }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
+  html { scroll-behavior: auto; }
   *, *::before, *::after {
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

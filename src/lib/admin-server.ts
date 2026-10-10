@@ -10,7 +10,7 @@ export async function getAdminAccess() {
     };
   }
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const access = await resolveAdminAccess(
       async () => { const result = await supabase.auth.getUser(); return { user: result.data.user, error: result.error }; },
       async () => await supabase.rpc("is_admin").abortSignal(AbortSignal.timeout(5000)),

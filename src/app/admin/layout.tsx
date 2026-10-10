@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FlowerIcon } from "@/components/icons";
+import { ArrowUpRight } from "lucide-react";
+import admin from "./admin.module.css";
 import { salon } from "@/lib/salon";
 
 export const dynamic = "force-dynamic";
@@ -8,16 +9,21 @@ export const metadata: Metadata = { title: `Salon workspace — ${salon.name}`, 
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <div className={admin.shell}>
       <a href="#admin-main" className="skip-link">Skip to admin content</a>
-      <header className="page-width site-header flex flex-wrap items-center justify-between gap-3 border-b border-line py-5">
-        <Link href="/" className="flex min-h-12 items-center gap-2 text-forest" aria-label={`${salon.name} salon home`}>
-          <FlowerIcon className="h-9 w-9" /><span className="font-display text-4xl tracking-[-0.07em]">{salon.name.toLowerCase()}.</span>
-        </Link>
-        <Link href="/" className="nav-link text-sm">View salon website</Link>
+      <header className={admin.header}>
+        <div className={`page-width ${admin.headerInner}`}>
+          <div className={admin.brand}>
+            <Link href="/admin" className={admin.wordmark} aria-label={`${salon.name} workspace home`}>
+              {salon.name.toLowerCase()}<span aria-hidden="true">.</span>
+            </Link>
+            <span className={admin.workspaceLabel}>Salon workspace</span>
+          </div>
+          <Link href="/" className={admin.siteLink}>View salon website <ArrowUpRight className={admin.icon} aria-hidden="true" /></Link>
+        </div>
       </header>
-      <main id="admin-main" tabIndex={-1} className="page-width pb-16 pt-8 sm:pt-12">{children}</main>
-      <footer className="page-width site-footer border-t border-line py-6 text-xs leading-6 text-muted">{salon.name} · Private salon workspace</footer>
-    </>
+      <main id="admin-main" tabIndex={-1} className={`page-width ${admin.main}`}>{children}</main>
+      <footer className={`page-width site-footer ${admin.footer}`}>{salon.name} · Private salon workspace</footer>
+    </div>
   );
 }
