@@ -26,12 +26,15 @@ export async function middleware(request: NextRequest) {
     // database allowlist independently; middleware is not authorization.
     await supabase.auth.getUser();
   } catch {
-    // Never forward an admin request after configuration/authentication throws.
-    // A 503 also avoids a redirect loop when the login page has broken config.
-    return NextResponse.json(
-      { error: "Admin access could not be verified. Please try again." },
-      { status: 503, headers: { "Cache-Control": "private, no-store, max-age=0" } },
-    );
+    console.error("middleware:auth_failed");
+    if (request.nextUrl.pathname === "/admin/login") return response;
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/admin/login";
+    loginUrl.search = "";
+    loginUrl.searchParams.set("error", "verification");
+    const redirect = NextResponse.redirect(loginUrl);
+    redirect.headers.set("Cache-Control", "private, no-store, max-age=0");
+    return redirect;
   }
   return response;
 }

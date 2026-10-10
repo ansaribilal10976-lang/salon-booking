@@ -38,11 +38,12 @@ export async function loadServiceCatalog(
   try {
     const { data, error } = await queryServices();
     if (error || data === null) {
+      console.error("services:query_failed");
       return { source: "unavailable", services: [] };
     }
     return { source: "supabase", services: data };
   } catch {
-    // Do not expose database details, URLs, or credentials in the public UI.
+    console.error("services:query_failed");
     return { source: "unavailable", services: [] };
   }
 }

@@ -2,13 +2,14 @@
 # Destructive fixture tests: disposable local database ONLY. Never auto-run races.
 set -euo pipefail
 TESTDB="${TESTDB:-}"
+FORBIDDEN_PROJECT_REF="${FORBIDDEN_PROJECT_REF:-}"
 
 if [[ -z "${TESTDB//[[:space:]]/}" ]]; then
   printf '%s\n' 'Refusing SQL tests: TESTDB must identify a disposable local database.' >&2
   exit 1
 fi
-if [[ "${TESTDB,,}" == *ytlmlixldsxfaveaokkv* ]]; then
-  printf '%s\n' 'Refusing SQL tests: TESTDB contains the forbidden live project reference.' >&2
+if [[ -z "${FORBIDDEN_PROJECT_REF//[[:space:]]/}" ]]; then
+  printf '%s\n' 'Refusing SQL tests: FORBIDDEN_PROJECT_REF must identify the live project reference.' >&2
   exit 1
 fi
 
@@ -22,6 +23,8 @@ const fail = () => {
 };
 try {
   const raw = process.argv[2];
+  const forbiddenRef = process.env.FORBIDDEN_PROJECT_REF?.trim().toLowerCase();
+  if (!forbiddenRef) fail();
   if (/\s/.test(raw) || /[\x00-\x1f\x7f]/.test(raw)) fail();
   const url = new URL(raw);
   if (!['postgres:', 'postgresql:'].includes(url.protocol)
@@ -29,8 +32,7 @@ try {
     || url.hash || !url.pathname.startsWith('/')
     || !decodeURIComponent(url.pathname.slice(1)).trim()
     || url.pathname.slice(1).includes('/')) fail();
-  // A percent-encoded live ref must not evade the literal shell check.
-  if (decodeURIComponent(raw).toLowerCase().includes('ytlmlixldsxfaveaokkv')) fail();
+  if (decodeURIComponent(raw).toLowerCase().includes(forbiddenRef)) fail();
   for (const key of url.searchParams.keys()) {
     if (!['sslmode', 'connect_timeout', 'application_name'].includes(key)) fail();
   }

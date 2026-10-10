@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       if (size + chunk.value.byteLength > bytes.byteLength) {
         // Do not retain the oversized chunk or wait for cancellation to finish.
         // A stalled/failed cancellation must not delay or replace the 413.
-        void reader.cancel().catch(() => {});
+        void reader.cancel().catch(() => console.error("api:booking_cancel_failed"));
         return NextResponse.json({ error: "Booking details are too long." }, { status: 413, headers });
       }
       bytes.set(chunk.value, size);
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     }
     input = JSON.parse(new TextDecoder().decode(bytes.subarray(0, size)));
   } catch {
+    console.error("api:booking_body_failed");
     return NextResponse.json({ error: "The booking details could not be read. Please try again." }, { status: 400, headers });
   } finally {
     reader?.releaseLock();

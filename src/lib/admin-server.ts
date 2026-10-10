@@ -17,6 +17,7 @@ export async function getAdminAccess() {
     );
     return { supabase, access };
   } catch {
+    console.error("admin:access_failed");
     return {
       supabase: null,
       access: { allowed: false as const, status: 503 as const, error: "Admin access could not be verified. Please try again." },

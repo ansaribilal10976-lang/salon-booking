@@ -113,7 +113,7 @@ export function BookingFlow({ services, config, initialServiceId }: Props) {
 
   if (receipt) {
     const bookedService = services.find((item) => item.id === receipt.service_id);
-    const bookedDate = new Intl.DateTimeFormat("en-US", { timeZone: config.time_zone, dateStyle: "full" }).format(new Date(receipt.slot_time));
+    const bookedDate = new Intl.DateTimeFormat(salon.locale, { timeZone: config.time_zone, dateStyle: "full" }).format(new Date(receipt.slot_time));
     return (
       <section aria-labelledby="booking-confirmed-title" className={booking.confirmation}>
         <p className={booking.confirmedLabel}><CircleCheck aria-hidden="true" />Appointment confirmed</p>

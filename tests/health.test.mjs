@@ -77,12 +77,12 @@ function request(headers, search = "") {
   return new NextRequest(`https://salon.example/api/health${search}`, { headers });
 }
 
-async function assertHealth(response, status) {
+async function assertHealth(response, status, detail) {
   assert.ok(response instanceof NextResponse, "execute the actual Next response path");
   assert.equal(response.status, status);
   assert.equal(response.headers.get("Cache-Control"), "no-store");
   assert.equal(response.headers.get("Set-Cookie"), null);
-  assert.deepEqual(await response.json(), { ok: status === 200 });
+  assert.deepEqual(await response.json(), { ok: status === 200, ...(detail ? { detail } : {}) });
 }
 
 test("public health checks use only a stateless public-key client and the configuration RPC", async (t) => {
@@ -185,6 +185,59 @@ test("missing, ambiguous, or invalid booking configuration is a sanitized failur
   }
 });
 
+test("authorized cron checks expose only sanitized step status", async (t) => {
+  const env = { CRON_SECRET: "cron-secret-test" };
+  const headers = { Authorization: "Bearer cron-secret-test" };
+  const healthy = fixture(t, { env });
+  await assertHealth(
+    await healthy.GET(request(headers)),
+    200,
+    { env: "ok", rpc: "ok", config: "ok" },
+  );
+});
+
+test("authorized cron diagnostics identify missing environment and RPC failures", async (t) => {
+  const headers = { Authorization: "Bearer cron-secret-test" };
+  const noEnvironment = fixture(t, {
+    env: {
+      CRON_SECRET: "cron-secret-test",
+      NEXT_PUBLIC_SUPABASE_URL: undefined,
+    },
+  });
+  await assertHealth(
+    await noEnvironment.GET(request(headers)),
+    503,
+    { env: "failed", rpc: "skipped", config: "skipped" },
+  );
+
+  const rpcFailure = fixture(t, {
+    env: { CRON_SECRET: "cron-secret-test" },
+    result: { data: null, error: new Error("sensitive upstream message") },
+  });
+  await assertHealth(
+    await rpcFailure.GET(request(headers)),
+    503,
+    { env: "ok", rpc: "failed", config: "skipped" },
+  );
+});
+
+test("authorized cron diagnostics distinguish invalid configuration", async (t) => {
+  const { GET } = fixture(t, {
+    env: { CRON_SECRET: "cron-secret-test" },
+    result: { data: [{ ...validConfig, time_zone: "invalid-zone" }], error: null },
+  });
+  await assertHealth(
+    await GET(request({ Authorization: "Bearer cron-secret-test" })),
+    503,
+    { env: "ok", rpc: "ok", config: "failed" },
+  );
+});
+
+test("unauthorized cron checks do not disclose diagnostic details", async (t) => {
+  const { GET } = fixture(t, { env: { CRON_SECRET: "cron-secret-test" } });
+  await assertHealth(await GET(request()), 401);
+});
+
 test("query errors and thrown query/client failures never expose upstream details", async (t) => {
   const detail = "private upstream URL, key, and database diagnostic test fixture";
   for (const [name, options] of [
@@ -249,7 +302,11 @@ test("unset/empty secrets permit public checks and a configured exact Bearer sec
   ]) {
     await t.test(`secret ${String(secret)}; header ${String(authorization)}`, async (t) => {
       const { GET, calls } = fixture(t, { env: { CRON_SECRET: secret } });
-      await assertHealth(await GET(request(authorization === undefined ? {} : { Authorization: authorization })), 200);
+      await assertHealth(
+        await GET(request(authorization === undefined ? {} : { Authorization: authorization })),
+        200,
+        secret ? { env: "ok", rpc: "ok", config: "ok" } : undefined,
+      );
       assert.equal(calls.clients.length, 1);
       assert.deepEqual(calls.rpcs, [["get_booking_config"]]);
     });

@@ -26,10 +26,15 @@ async function loadBookingPage(): Promise<{ services: Service[]; config: Booking
       supabase.rpc("get_booking_config").abortSignal(AbortSignal.timeout(5000)),
     ]);
     const config = settings.data?.[0];
+    if (menu.error) console.error("book:services_query_failed");
+    if (settings.error) console.error("book:config_query_failed");
     if (menu.error || settings.error || !menu.data || !config || !isCalendarDate(config.min_date) || !isCalendarDate(config.max_date)) return null;
-    new Intl.DateTimeFormat("en-US", { timeZone: config.time_zone }).format();
+    new Intl.DateTimeFormat(salon.locale, { timeZone: config.time_zone }).format();
     return { services: menu.data, config };
-  } catch { return null; }
+  } catch {
+    console.error("book:load_failed");
+    return null;
+  }
 }
 
 export default async function BookPage({ searchParams }: { searchParams: Promise<{ service?: string | string[] }> }) {

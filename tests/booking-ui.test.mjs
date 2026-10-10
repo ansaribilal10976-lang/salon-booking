@@ -83,7 +83,7 @@ test("booking availability renders error, empty, invalid-date and selected-slot 
   assert.match(invalid, /aria-invalid="true"/);
   const selected = renderFlow({ ...base, availability: ready, slotTime: slot });
   assert.match(selected, /name="slot"[^>]*checked=""/);
-  assert.match(selected, /10:00 AM/);
+  assert.match(selected, /10:00 am/);
   assert.match(selected, /Selected time/);
   assertSubmitDisabled(selected, false);
 });
@@ -109,7 +109,7 @@ test("booking confirmation preserves the receipt, timezone, contact and no-payme
   const html = renderFlow({ receipt: { id: "a143a627-2e99-4a94-8188-69608d4885e3", service_id: service.id, customer_name: "Guest <script>", phone: "+91 98765 43210", slot_time: slot, end_time: "2026-10-12T06:00:00Z", status: "confirmed" } });
   assert.match(html, /id="booking-confirmed-title" tabindex="-1"/);
   assert.match(html, /Guest &lt;script&gt;/);
-  assert.match(html, /10:00 AM – 11:30 AM/);
+  assert.match(html, /10:00 am – 11:30 am/);
   assert.match(html, /Asia\/Kolkata/);
   assert.match(html, /₹1,234.50/);
   assert.match(html, /a143a627-2e99-4a94-8188-69608d4885e3/);

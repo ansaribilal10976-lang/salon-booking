@@ -130,12 +130,15 @@ test("middleware fails closed for an invalid Supabase URL on admin pages and API
     const { middleware } = loadSource("../src/middleware.ts");
     for (const path of ["/admin", "/admin/login", "/api/admin/services"]) {
       const response = await middleware(new NextRequest(`https://salon.example${path}`));
-      assert.equal(response.status, 503);
-      assert.equal(response.headers.get("x-middleware-next"), null, "never forward the protected request");
       assert.equal(response.headers.get("Cache-Control"), "private, no-store, max-age=0");
-      const body = await response.json();
-      assert.deepEqual(body, { error: "Admin access could not be verified. Please try again." });
-      assert.equal(JSON.stringify(body).includes("invalid-project-url"), false);
+      if (path === "/admin/login") {
+        assert.equal(response.status, 200, "allow the login page to render without a redirect loop");
+        assert.equal(response.headers.get("x-middleware-next"), "1");
+      } else {
+        assert.equal(response.status, 307);
+        assert.equal(response.headers.get("x-middleware-next"), null, "never forward the protected request");
+        assert.equal(response.headers.get("location"), "https://salon.example/admin/login?error=verification");
+      }
     }
     assert.equal(networkCalls, 0);
   } finally {

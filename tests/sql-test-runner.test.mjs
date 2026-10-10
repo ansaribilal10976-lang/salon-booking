@@ -8,6 +8,7 @@ import { test } from "node:test";
 
 const runner = fileURLToPath(new URL("../scripts/run-sql-tests.sh", import.meta.url));
 const sqlDirectory = fileURLToPath(new URL("../supabase/tests/", import.meta.url));
+const forbiddenProjectRef = process.env.FORBIDDEN_PROJECT_REF ?? "fixture-live-project-ref";
 
 // Invoke the shell runner ONLY with a fake psql first in PATH. This never opens
 // a database or reads application credentials; every invocation is recorded.
@@ -26,6 +27,7 @@ process.exit(process.env.FAKE_PSQL_FAIL === '1' ? 9 : 0);
   const run = (database, extra = {}) => {
     const env = {
       ...process.env, PATH: `${directory}:${process.env.PATH}`, FAKE_PSQL_LOG: log,
+      FORBIDDEN_PROJECT_REF: forbiddenProjectRef,
       // A inherited remote libpq target must be removed before fake psql runs.
       PGHOSTADDR: "203.0.113.10", PGSERVICE: "remote-test-fixture", PGDATABASE: "other-test-fixture",
       ...extra,
@@ -53,10 +55,10 @@ test("SQL runner refuses missing/blank TESTDB and never falls back to DATABASE_U
 
 test("SQL runner refuses live refs, remote targets, and libpq target overrides", (t) => {
   for (const database of [
-    "postgresql://postgres@ytlmlixldsxfaveaokkv.supabase.co/test",
-    "postgresql://postgres@127.0.0.1/ytlmlixldsxfaveaokkv",
-    "postgresql://postgres@127.0.0.1/YTLMLIXLDSXFAVEAOKKV",
-    "postgresql://postgres@127.0.0.1/%79tlmlixldsxfaveaokkv",
+    `postgresql://postgres@${forbiddenProjectRef}.supabase.co/test`,
+    `postgresql://postgres@127.0.0.1/${forbiddenProjectRef}`,
+    `postgresql://postgres@127.0.0.1/${forbiddenProjectRef.toUpperCase()}`,
+    `postgresql://postgres@127.0.0.1/%${forbiddenProjectRef.charCodeAt(0).toString(16)}${forbiddenProjectRef.slice(1)}`,
     "postgresql://postgres@db.example.invalid/test",
     "postgresql://postgres@192.0.2.1/test",
     "postgresql://postgres@[2001:db8::1]/test",
