@@ -1,14 +1,10 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 
 const root = new URL("../", import.meta.url);
-const sources = [
-  "20261005000000_create_services_and_bookings.sql",
-  "20261005010000_add_guest_booking_rpcs.sql",
-  "20261005020000_add_admin_dashboard.sql",
-  "20261005030000_allow_public_booking_inserts.sql",
-  "20261005040000_validate_raw_service_values.sql",
-  "20261005050000_protect_guest_bookings.sql",
-];
+const sources = (await readdir(new URL("supabase/migrations/", root)))
+  .filter((name) => name.endsWith(".sql"))
+  .sort();
+if (!sources.length) throw new Error("No migration files found in supabase/migrations.");
 const destination = new URL("supabase/salon_booking_schema.sql", root);
 const sections = [];
 for (const name of sources) {

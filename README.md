@@ -285,12 +285,14 @@ SQL tests on a **disposable development database**:
 
 ### Guarded SQL runner — do not use on production
 
-`scripts/run-sql-tests.sh` uses **only `$TESTDB`**; it never falls back to `DATABASE_URL` or application credentials. It refuses missing/whitespace-only values, the live ref `ytlmlixldsxfaveaokkv` (including case/percent-encoding variations), remote/ambiguous targets, and URI target overrides. Supply an explicit `postgres://` or `postgresql://` URI with a database and loopback host (`127.0.0.1`, `localhost`, or `[::1]`). Libpq conninfo/services/Unix sockets are deliberately unsupported. Only `sslmode`, `connect_timeout`, and `application_name` query parameters are accepted.
+`scripts/run-sql-tests.sh` uses **only `$TESTDB`**; it never falls back to `DATABASE_URL` or application credentials. It requires `FORBIDDEN_PROJECT_REF` to be set to the live Supabase project reference and refuses targets containing that reference (including case/percent-encoding variations), remote/ambiguous targets, and URI target overrides. Supply an explicit `postgres://` or `postgresql://` URI with a database and loopback host (`127.0.0.1`, `localhost`, or `[::1]`). Libpq conninfo/services/Unix sockets are deliberately unsupported. Only `sslmode`, `connect_timeout`, and `application_name` query parameters are accepted.
 
 On an already migrated, **disposable local** database, the owner may run:
 
 ```bash
-TESTDB='postgresql://postgres@127.0.0.1:5432/salon_test' bash scripts/run-sql-tests.sh
+FORBIDDEN_PROJECT_REF='<live-project-ref>' \
+TESTDB='postgresql://postgres@127.0.0.1:5432/salon_test' \
+bash scripts/run-sql-tests.sh
 ```
 
 It runs ordinary `supabase/tests/*.sql` with `psql -X -w -v ON_ERROR_STOP=1`, stops at the first failure, ignores psql startup scripts/inherited connection-target defaults, never prints the connection string, and **excludes `booking_concurrency.sql`**, printing its separate manual instructions instead. Fixtures can truncate/lock the calendar: loopback is only a target guard, not proof the selected database is safe. Do not point it at a production tunnel. Tests of the runner use a fake `psql`, never a database.

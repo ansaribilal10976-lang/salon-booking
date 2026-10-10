@@ -1,3 +1,5 @@
+import { salon } from "./salon.ts";
+
 export type BookingRequest = {
   bookingId: string;
   serviceId: string;
@@ -61,13 +63,13 @@ export function validateBookingRequest(input: unknown):
 }
 
 export function formatSlotTime(instant: string, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(salon.locale, {
     timeZone, hour: "numeric", minute: "2-digit", hour12: true,
   }).format(new Date(instant));
 }
 
 export function formatBookingDate(date: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(salon.locale, {
     timeZone: "UTC", weekday: "long", month: "long", day: "numeric", year: "numeric",
   }).format(new Date(`${date}T12:00:00Z`));
 }

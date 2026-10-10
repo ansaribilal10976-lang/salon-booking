@@ -45,8 +45,8 @@ test("admin appointment book preserves filter URLs, salon time, customer contact
   const todayLink = html.match(/<a\b[^>]*href="\/admin\?view=today"[^>]*>/)?.[0];
   assert.ok(todayLink?.includes('aria-current="page"'));
   assert.match(html, /href="\/admin\?view=upcoming"/);
-  assert.match(html, /10:00 AM/);
-  assert.match(html, /11:30 AM/);
+  assert.match(html, /10:00 am/);
+  assert.match(html, /11:30 am/);
   assert.match(html, /Asia\/Kolkata/);
   assert.ok(html.includes(appointment.phone));
   assert.ok(html.includes(appointment.id));
@@ -180,6 +180,7 @@ test("admin page renders real panel props and unavailable feedback through mocke
       "./admin.module.css": cssModule,
       "@/lib/admin-server": { getAdminAccess: async () => accessResult },
       "@/lib/admin-validation": validation,
+      "@/lib/salon": salon,
     });
     return renderToStaticMarkup(await Page({ searchParams: Promise.resolve({ view: "upcoming", page: "2" }) }));
   }

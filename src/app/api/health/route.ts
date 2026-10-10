@@ -7,8 +7,10 @@ import type { Database } from "@/types/database";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function healthResponse(status: 200 | 401 | 503) {
-  return NextResponse.json({ ok: status === 200 }, {
+type HealthDetail = { env: "ok" | "failed"; rpc: "ok" | "failed" | "skipped"; config: "ok" | "failed" | "skipped" };
+
+function healthResponse(status: 200 | 401 | 503, detail?: HealthDetail) {
+  return NextResponse.json({ ok: status === 200, ...(detail ? { detail } : {}) }, {
     status, headers: { "Cache-Control": "no-store" },
   });
 }
@@ -26,6 +28,7 @@ function isValidConfig(data: unknown): boolean {
     new Intl.DateTimeFormat("en-IN", { timeZone: config.time_zone }).format();
     return true;
   } catch {
+    console.error("health:config_invalid");
     return false;
   }
 }
@@ -41,10 +44,13 @@ export async function GET(request: NextRequest) {
   if (secret && !hasCronAuthorization(request, secret)) {
     return healthResponse(401);
   }
+  const includeDetail = Boolean(secret);
+  const detail: HealthDetail = { env: "failed", rpc: "skipped", config: "skipped" };
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return healthResponse(503);
+  if (!url || !key) return healthResponse(503, includeDetail ? detail : undefined);
+  detail.env = "ok";
 
   try {
     // Independent of visitor cookies/sessions: use only the public project key.
@@ -60,9 +66,21 @@ export async function GET(request: NextRequest) {
     });
     const { data, error } = await supabase.rpc("get_booking_config")
       .abortSignal(AbortSignal.timeout(5000));
-    return healthResponse(!error && isValidConfig(data) ? 200 : 503);
+    if (error) {
+      console.error("health:rpc_failed");
+      detail.rpc = "failed";
+      return healthResponse(503, includeDetail ? detail : undefined);
+    }
+    detail.rpc = "ok";
+    if (!isValidConfig(data)) {
+      detail.config = "failed";
+      return healthResponse(503, includeDetail ? detail : undefined);
+    }
+    detail.config = "ok";
+    return healthResponse(200, includeDetail ? detail : undefined);
   } catch {
-    // Never return configuration, credentials, or upstream error details.
-    return healthResponse(503);
+    console.error("health:rpc_failed");
+    detail.rpc = "failed";
+    return healthResponse(503, includeDetail ? detail : undefined);
   }
 }

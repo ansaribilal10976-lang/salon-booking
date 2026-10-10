@@ -71,9 +71,9 @@ test("null, array and untrusted objects fail validation without throwing", () =>
 });
 
 test("slot labels use the salon timezone rather than the visitor timezone, including DST", () => {
-  assert.equal(formatSlotTime("2030-01-15T15:00:00Z", "America/New_York"), "10:00 AM");
-  assert.equal(formatSlotTime("2030-07-15T14:00:00Z", "America/New_York"), "10:00 AM");
-  assert.match(formatBookingDate("2030-01-15"), /January 15, 2030/);
+  assert.equal(formatSlotTime("2030-01-15T15:00:00Z", "America/New_York"), "10:00 am");
+  assert.equal(formatSlotTime("2030-07-15T14:00:00Z", "America/New_York"), "10:00 am");
+  assert.match(formatBookingDate("2030-01-15"), /15 January 2030/);
 });
 
 test("invalid availability input never invokes the database adapter", async () => {

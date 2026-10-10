@@ -11,6 +11,7 @@ import { AdminRequestError, adminRequest } from "@/lib/admin-client";
 import { canChangeBookingStatus } from "@/lib/admin-validation";
 import type { AdminView } from "@/lib/admin-validation";
 import { formatSlotTime } from "@/lib/booking-validation";
+import { salon } from "@/lib/salon";
 import type { AdminBooking } from "@/types/database";
 
 function BookingActions({ booking }: { booking: AdminBooking }) {
@@ -62,7 +63,7 @@ function BookingActions({ booking }: { booking: AdminBooking }) {
 }
 
 export function AdminBookings({ bookings, view, page, hasMore, timeZone, error }: { bookings: AdminBooking[]; view: AdminView; page: number; hasMore: boolean; timeZone: string; error: string | null }) {
-  const dateLabel = (instant: string) => new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", month: "short", day: "numeric", year: "numeric" }).format(new Date(instant));
+  const dateLabel = (instant: string) => new Intl.DateTimeFormat(salon.locale, { timeZone, weekday: "short", month: "short", day: "numeric", year: "numeric" }).format(new Date(instant));
   const statusStyles = { pending: admin.pending, confirmed: admin.confirmed, cancelled: admin.cancelled, completed: admin.completed };
   return (
     <section aria-labelledby="admin-bookings-title" className={admin.bookings}>

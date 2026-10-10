@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import admin from "./admin.module.css";
 import { getAdminAccess } from "@/lib/admin-server";
 import { parseAdminFilters } from "@/lib/admin-validation";
+import { salon } from "@/lib/salon";
 import type { AdminBooking, BookingConfiguration, Service } from "@/types/database";
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; page?: string | string[] }> }) {
@@ -31,14 +32,20 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       supabase.rpc("list_admin_bookings", { p_view: filters.view, p_offset: filters.offset, p_limit: 51 }).abortSignal(AbortSignal.timeout(5000)),
       supabase.from("services").select("id, name, duration, price").order("name").abortSignal(AbortSignal.timeout(5000)),
     ]);
+    if (settings.error) console.error("admin:config_query_failed");
+    if (appointments.error) console.error("admin:bookings_query_failed");
+    if (menu.error) console.error("admin:services_query_failed");
     accessLost = appointments.error?.code === "42501";
     config = settings.error ? undefined : settings.data?.[0];
     bookings = appointments.data ?? [];
     services = menu.data ?? [];
     bookingError = appointments.error || !appointments.data ? "Bookings could not be loaded. Refresh the dashboard to try again." : null;
     serviceError = menu.error || !menu.data ? "The service menu could not be loaded. Refresh before making changes." : null;
-    if (config) new Intl.DateTimeFormat("en-US", { timeZone: config.time_zone }).format();
-  } catch { return <AdminUnavailable message="The salon’s schedule could not be loaded. Please try again." />; }
+    if (config) new Intl.DateTimeFormat(salon.locale, { timeZone: config.time_zone }).format();
+  } catch {
+    console.error("admin:load_failed");
+    return <AdminUnavailable message="The salon’s schedule could not be loaded. Please try again." />;
+  }
   if (accessLost) redirect("/admin/access-denied");
   if (!config) return <AdminUnavailable message="The salon’s booking configuration is unavailable. Please check the Supabase migrations and try again." />;
 
